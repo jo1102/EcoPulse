@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Future Projections - EcoPulse Energy Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --aramco-red: #C41E3A;
+            --aramco-black: #1C1C1C;
+            --aramco-white: #FFFFFF;
+            --aramco-gray: #6C757D;
+            --aramco-dark-red: #8B1538;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1C1C1C 0%, #2C2C2C 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--aramco-white);
+        }
+        
+        .navbar {
+            background: var(--aramco-black) !important;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card {
+            background: rgba(28, 28, 28, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--aramco-red);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(196, 30, 58, 0.2);
+            transition: all 0.3s ease;
+            color: var(--aramco-white);
+        }
+        
+        .projection-metric {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(196, 30, 58, 0.1), rgba(28, 28, 28, 0.3));
+            border: 1px solid var(--aramco-red);
+            transition: all 0.3s ease;
+        }
+        
+        .projection-metric:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--aramco-red);
+        }
+        
+        .text-muted {
+            color: var(--aramco-white) !important;
+        }
+        
+        .chart-container {
+            height: 400px;
+            border-radius: 15px;
+        }
+        
+        .timeline-item {
+            border-left: 3px solid var(--aramco-red);
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--aramco-red);
+        }
+        
+        .timeline-date {
+            font-weight: 600;
+            color: var(--aramco-red);
+            font-size: 0.9rem;
+        }
+        
+        .cost-breakdown {
+            background: rgba(196, 30, 58, 0.1);
+            border-left: 4px solid var(--aramco-red);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .recommendation-item {
+            background: rgba(196, 30, 58, 0.1);
+            border: 1px solid rgba(196, 30, 58, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            transition: all 0.3s ease;
+        }
+        
+        .recommendation-item:hover {
+            background: rgba(196, 30, 58, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .projection-controls {
+            background: rgba(28, 28, 28, 0.9);
+            border: 1px solid var(--aramco-red);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: var(--aramco-white);
+        }
+        
+        .form-select, .form-control {
+            background-color: var(--aramco-black);
+            border-color: var(--aramco-red);
+            color: var(--aramco-white);
+        }
+        
+        .form-select:focus, .form-control:focus {
+            background-color: var(--aramco-black);
+            border-color: var(--aramco-red);
+            color: var(--aramco-white);
+            box-shadow: 0 0 0 0.25rem rgba(196, 30, 58, 0.25);
+        }
+        
+        .energy-bar {
+            height: 40px;
+            background: linear-gradient(90deg, var(--aramco-red) 0%, var(--aramco-dark-red) 100%);
+            border-radius: 20px;
+            position: relative;
+            margin: 1rem 0;
+        }
+        
+        .energy-level {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B 0%, var(--aramco-red) 50%, #C41E3A 100%);
+            border-radius: 20px;
+            transition: width 1.5s ease-in-out;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark sticky-top">
+        <div class="container-fluid">
+            <a href="/" class="navbar-brand">
+                <i class="fas fa-leaf"></i> EcoPulse - Future Projections
+            </a>
+            <div class="d-flex">
+                <a href="/" class="btn btn-outline-light me-2">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="/current-status" class="btn btn-outline-light">
+                    <i class="fas fa-tachometer-alt"></i> Current Status
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Controls -->
+        <div class="row">
+            <div class="col-12">
+                <div class="projection-controls">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label for="projection-period" class="form-label">Projection Period:</label>
+                            <select class="form-select" id="projection-period" onchange="loadProjections()">
+                                <option value="30">30 Days</option>
+                                <option value="60">60 Days</option>
+                                <option value="90" selected>90 Days</option>
+                                <option value="180">6 Months</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="scenario-type" class="form-label">Scenario:</label>
+                            <select class="form-select" id="scenario-type" onchange="loadProjections()">
+                                <option value="current">Current Trajectory</option>
+                                <option value="optimistic">Optimistic</option>
+                                <option value="pessimistic">Pessimistic</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-primary" onclick="generateReport()">
+                                <i class="fas fa-file-pdf"></i> Generate Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projected Metrics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="projection-metric">
+                    <div class="metric-value" id="projected-power">--</div>
+                    <h6 class="mt-2">Projected Power</h6>
+                    <small class="text-muted">Average for period</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="projection-metric">
+                    <div class="metric-value" id="projected-clean">--</div>
+                    <h6 class="mt-2">Clean Energy</h6>
+                    <small class="text-muted">Improvement potential</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="projection-metric">
+                    <div class="metric-value" id="projected-netzero">--</div>
+                    <h6 class="mt-2">Net Zero Progress</h6>
+                    <small class="text-muted">Target achievement</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="projection-metric">
+                    <div class="metric-value" id="total-cost">--</div>
+                    <h6 class="mt-2">Total Investment</h6>
+                    <small class="text-muted">Estimated costs</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Projection Chart -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line text-primary"></i>
+                            Performance Projection Timeline
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="projection-timeline-chart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Implementation Timeline and Costs -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tasks text-success"></i>
+                            Implementation Timeline
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="implementation-timeline">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading implementation timeline...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-dollar-sign text-warning"></i>
+                            Cost Analysis
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="cost-breakdown">
+                            <div class="text-center">
+                                <div class="spinner-border text-warning" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading cost analysis...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Power Output -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bolt" style="color: var(--aramco-red);"></i>
+                            Current Power Output
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">Total Energy Output: <span id="current-total-output" class="text-white">--</span> MW</h6>
+                                <div class="energy-bar">
+                                    <div id="current-energy-level" class="energy-level" style="width: 0%">
+                                        <div class="position-absolute top-50 start-50 translate-middle text-white fw-bold">
+                                            <span id="current-percentage">--</span>%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-3 text-center">
+                                        <small class="text-white">Solar</small><br>
+                                        <strong id="solar-current" class="text-white">--</strong> MW
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <small class="text-white">Wind</small><br>
+                                        <strong id="wind-current" class="text-white">--</strong> MW
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <small class="text-white">Hydro</small><br>
+                                        <strong id="hydro-current" class="text-white">--</strong> MW
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <small class="text-white">Gas</small><br>
+                                        <strong id="gas-current" class="text-white">--</strong> MW
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div id="power-output-gauge" class="chart-container" style="height: 250px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Energy Sources Distribution -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie" style="color: var(--aramco-red);"></i>
+                            Energy Sources Distribution
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="energy-sources-pie" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-lightbulb" style="color: var(--aramco-red);"></i>
+                            AI-Powered Recommendations
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="recommendations-container">
+                            <div class="text-center">
+                                <div class="spinner-border" style="color: var(--aramco-red);" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-white">Analyzing patterns and generating recommendations...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let projectionData = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProjections();
+            loadCurrentPowerOutput();
+            loadEnergySourcesDistribution();
+        });
+
+        async function loadCurrentPowerOutput() {
+            try {
+                const response = await fetch('/api/current_status');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const energySources = data.energy_sources;
+                    const totalOutput = energySources.solar.current + energySources.wind.current + 
+                                      energySources.hydro.current + energySources.oil_gas.current;
+                    
+                    document.getElementById('current-total-output').textContent = totalOutput.toFixed(1);
+                    document.getElementById('current-percentage').textContent = Math.round((totalOutput / 300) * 100);
+                    document.getElementById('current-energy-level').style.width = Math.min((totalOutput / 300) * 100, 100) + '%';
+                    
+                    document.getElementById('solar-current').textContent = energySources.solar.current;
+                    document.getElementById('wind-current').textContent = energySources.wind.current;
+                    document.getElementById('hydro-current').textContent = energySources.hydro.current;
+                    document.getElementById('gas-current').textContent = energySources.oil_gas.current;
+                    
+                    // Create gauge chart
+                    createPowerOutputGauge(totalOutput);
+                }
+            } catch (error) {
+                console.error('Error loading current power output:', error);
+            }
+        }
+        
+        function createPowerOutputGauge(currentOutput) {
+            const data = [{
+                type: 'indicator',
+                mode: 'gauge+number+delta',
+                value: currentOutput,
+                domain: { x: [0, 1], y: [0, 1] },
+                title: { text: 'MW Output', font: { color: 'white' } },
+                delta: { reference: 250, increasing: { color: '#C41E3A' } },
+                gauge: {
+                    axis: { range: [null, 300], tickcolor: 'white', tickfont: { color: 'white' } },
+                    bar: { color: '#C41E3A' },
+                    bgcolor: 'rgba(28,28,28,0.8)',
+                    borderwidth: 2,
+                    bordercolor: '#C41E3A',
+                    steps: [
+                        { range: [0, 150], color: 'rgba(196,30,58,0.2)' },
+                        { range: [150, 250], color: 'rgba(196,30,58,0.5)' },
+                        { range: [250, 300], color: 'rgba(196,30,58,0.8)' }
+                    ],
+                    threshold: {
+                        line: { color: 'white', width: 4 },
+                        thickness: 0.75,
+                        value: 280
+                    }
+                }
+            }];
+            
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: 'white', size: 12 },
+                margin: { t: 40, r: 25, l: 25, b: 25 }
+            };
+            
+            Plotly.newPlot('power-output-gauge', data, layout, {displayModeBar: false, responsive: true});
+        }
+        
+        async function loadEnergySourcesDistribution() {
+            try {
+                const response = await fetch('/api/current_status');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    createEnergySourcesPie(data.energy_sources);
+                }
+            } catch (error) {
+                console.error('Error loading energy sources:', error);
+            }
+        }
+        
+        function createEnergySourcesPie(energySources) {
+            const data = [{
+                type: 'pie',
+                labels: ['Solar', 'Wind', 'Hydro', 'Oil & Gas'],
+                values: [
+                    energySources.solar.current,
+                    energySources.wind.current,
+                    energySources.hydro.current,
+                    energySources.oil_gas.current
+                ],
+                marker: {
+                    colors: ['#C41E3A', '#8B1538', '#FF6B6B', '#4A0E1A']
+                },
+                textinfo: 'label+percent+value',
+                textposition: 'outside',
+                textfont: {
+                    color: 'white',
+                    size: 12
+                },
+                hovertemplate: '<b>%{label}</b><br>Output: %{value} MW<br>Share: %{percent}<extra></extra>'
+            }];
+            
+            const layout = {
+                title: {
+                    text: 'Current Energy Distribution',
+                    font: { color: 'white', size: 16 },
+                    x: 0.5
+                },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: 'white' },
+                showlegend: true,
+                legend: {
+                    orientation: 'h',
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: -0.1,
+                    font: { color: 'white' }
+                },
+                margin: { t: 60, r: 50, l: 50, b: 80 }
+            };
+            
+            Plotly.newPlot('energy-sources-pie', data, layout, {displayModeBar: false, responsive: true});
+        }
+
+        async function loadProjections() {
+            try {
+                const days = document.getElementById('projection-period').value;
+                const scenario = document.getElementById('scenario-type').value;
+                
+                const response = await fetch(`/api/future_projections?days=${days}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    projectionData = data.projections;
+                    
+                    // Apply scenario adjustments
+                    let adjustedData = adjustForScenario(projectionData, scenario);
+                    
+                    updateProjectedMetrics(data.improvement_potential, data.total_estimated_cost);
+                    createProjectionChart(adjustedData);
+                    createImplementationTimeline(adjustedData.slice(0, 30)); // First 30 days
+                    createCostBreakdown(data.total_estimated_cost);
+                    generateRecommendations(adjustedData);
+                }
+            } catch (error) {
+                console.error('Error loading projections:', error);
+            }
+        }
+
+        function adjustForScenario(data, scenario) {
+            const multipliers = {
+                'current': { power: 1.0, clean: 1.0, netzero: 1.0, cost: 1.0 },
+                'optimistic': { power: 1.15, clean: 1.25, netzero: 1.20, cost: 0.85 },
+                'pessimistic': { power: 0.85, clean: 0.80, netzero: 0.75, cost: 1.25 }
+            };
+            
+            const mult = multipliers[scenario];
+            
+            return data.map(item => ({
+                ...item,
+                predicted_power: Math.round(item.predicted_power * mult.power * 10) / 10,
+                predicted_clean: Math.round(item.predicted_clean * mult.clean * 10) / 10,
+                predicted_net_zero: Math.round(item.predicted_net_zero * mult.netzero * 10) / 10,
+                estimated_cost: Math.round(item.estimated_cost * mult.cost)
+            }));
+        }
+
+        function updateProjectedMetrics(improvement, totalCost) {
+            document.getElementById('projected-power').textContent = improvement.power + ' MW';
+            document.getElementById('projected-clean').textContent = improvement.clean + '%';
+            document.getElementById('projected-netzero').textContent = improvement.net_zero + '%';
+            document.getElementById('total-cost').textContent = '$' + (totalCost / 1000).toFixed(0) + 'K';
+        }
+
+        function createProjectionChart(data) {
+            const dates = data.map(d => d.date);
+            
+            const chartData = [
+                {
+                    x: dates,
+                    y: data.map(d => d.predicted_power),
+                    name: 'Power Generation (MW)',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#C41E3A', width: 3 },
+                    marker: { color: '#C41E3A', size: 6 }
+                },
+                {
+                    x: dates,
+                    y: data.map(d => d.predicted_clean),
+                    name: 'Clean Energy %',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#8B1538', width: 3 },
+                    marker: { color: '#8B1538', size: 6 }
+                },
+                {
+                    x: dates,
+                    y: data.map(d => d.predicted_net_zero),
+                    name: 'Net Zero Score %',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#FF6B6B', width: 3 },
+                    marker: { color: '#FF6B6B', size: 6 }
+                }
+            ];
+
+            const layout = {
+                title: {
+                    text: 'Future Performance Projections',
+                    font: { color: 'white', size: 18 }
+                },
+                xaxis: { 
+                    title: { text: 'Date', font: { color: 'white' } },
+                    showgrid: true,
+                    gridcolor: 'rgba(196,30,58,0.3)',
+                    tickfont: { color: 'white' }
+                },
+                yaxis: { 
+                    title: { text: 'Performance Metrics', font: { color: 'white' } },
+                    showgrid: true,
+                    gridcolor: 'rgba(196,30,58,0.3)',
+                    tickfont: { color: 'white' }
+                },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(28,28,28,0.8)',
+                hovermode: 'x unified',
+                legend: {
+                    orientation: 'h',
+                    y: -0.2,
+                    font: { color: 'white' }
+                }
+            };
+
+            Plotly.newPlot('projection-timeline-chart', chartData, layout, {responsive: true});
+        }
+
+        function createImplementationTimeline(data) {
+            const container = document.getElementById('implementation-timeline');
+            let html = '';
+
+            // Group data by weeks for timeline
+            const weeks = [];
+            for (let i = 0; i < data.length; i += 7) {
+                const weekData = data.slice(i, i + 7);
+                const weekAvg = {
+                    start_date: weekData[0].date,
+                    end_date: weekData[weekData.length - 1].date,
+                    avg_power: weekData.reduce((sum, d) => sum + d.predicted_power, 0) / weekData.length,
+                    avg_clean: weekData.reduce((sum, d) => sum + d.predicted_clean, 0) / weekData.length,
+                    total_cost: weekData.reduce((sum, d) => sum + d.estimated_cost, 0),
+                    actions: weekData[0].recommended_actions || []
+                };
+                weeks.push(weekAvg);
+            }
+
+            weeks.forEach((week, index) => {
+                html += `
+                    <div class="timeline-item">
+                        <div class="timeline-date">
+                            Week ${index + 1}: ${week.start_date} - ${week.end_date}
+                        </div>
+                        <h6 class="mt-2">Projected Improvements</h6>
+                        <p class="mb-2">
+                            <strong>Power:</strong> ${week.avg_power.toFixed(1)} MW |
+                            <strong>Clean Energy:</strong> ${week.avg_clean.toFixed(1)}% |
+                            <strong>Cost:</strong> $${week.total_cost.toLocaleString()}
+                        </p>
+                        <div class="recommended-actions">
+                            <small class="text-muted">Recommended Actions:</small>
+                            <ul class="mt-1">
+                                ${week.actions.map(action => `<li>${action}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function createCostBreakdown(totalCost) {
+            const container = document.getElementById('cost-breakdown');
+            
+            // Simulate cost breakdown
+            const breakdown = {
+                'Infrastructure': Math.round(totalCost * 0.40),
+                'Maintenance': Math.round(totalCost * 0.25),
+                'Technology': Math.round(totalCost * 0.20),
+                'Operations': Math.round(totalCost * 0.15)
+            };
+
+            let html = '<h6 class="mb-3">Investment Breakdown</h6>';
+            
+            Object.entries(breakdown).forEach(([category, amount]) => {
+                const percentage = Math.round((amount / totalCost) * 100);
+                html += `
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>${category}:</span>
+                        <div class="text-end">
+                            <strong>$${amount.toLocaleString()}</strong>
+                            <small class="text-muted">(${percentage}%)</small>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                <hr>
+                <div class="cost-breakdown">
+                    <div class="d-flex justify-content-between">
+                        <strong>Total Investment:</strong>
+                        <strong>$${totalCost.toLocaleString()}</strong>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Estimated ROI: 18-24 months based on efficiency gains
+                    </small>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function generateRecommendations(data) {
+            const container = document.getElementById('recommendations-container');
+            
+            // Analyze data to generate smart recommendations
+            const avgClean = data.reduce((sum, d) => sum + d.predicted_clean, 0) / data.length;
+            const avgPower = data.reduce((sum, d) => sum + d.predicted_power, 0) / data.length;
+            const totalCost = data.reduce((sum, d) => sum + d.estimated_cost, 0);
+
+            const recommendations = [
+                {
+                    title: 'Solar Panel Optimization',
+                    description: 'Clean energy potential shows room for improvement. Consider upgrading solar panel efficiency.',
+                    priority: avgClean < 75 ? 'High' : 'Medium',
+                    impact: 'Up to 15% increase in clean energy output',
+                    cost: '$25,000 - $40,000'
+                },
+                {
+                    title: 'Energy Storage Enhancement',
+                    description: 'Battery storage optimization could improve overall system reliability.',
+                    priority: avgPower < 850 ? 'High' : 'Low',
+                    impact: 'Reduced energy waste by 8-12%',
+                    cost: '$15,000 - $30,000'
+                },
+                {
+                    title: 'Predictive Maintenance Schedule',
+                    description: 'Implement AI-driven maintenance to prevent efficiency drops.',
+                    priority: 'Medium',
+                    impact: 'Prevent 5-10% efficiency loss',
+                    cost: '$5,000 - $12,000'
+                },
+                {
+                    title: 'Grid Integration Upgrade',
+                    description: 'Enhanced grid connectivity for better energy distribution.',
+                    priority: totalCost > 150000 ? 'Low' : 'High',
+                    impact: 'Improved net zero progress by 20%',
+                    cost: '$35,000 - $55,000'
+                }
+            ];
+
+            let html = '';
+            recommendations.forEach(rec => {
+                const priorityColor = rec.priority === 'High' ? 'danger' : 
+                                    rec.priority === 'Medium' ? 'warning' : 'success';
+                
+                html += `
+                    <div class="recommendation-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-lightbulb"></i> ${rec.title}
+                                    <span class="badge bg-${priorityColor} ms-2">${rec.priority}</span>
+                                </h6>
+                                <p class="mb-2 text-muted">${rec.description}</p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small><strong>Expected Impact:</strong> ${rec.impact}</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small><strong>Investment Range:</strong> ${rec.cost}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function generateReport() {
+            alert('Report generation functionality would integrate with PDF generation service.\n\nThis would include:\n• Executive summary\n• Detailed projections\n• Cost analysis\n• Implementation timeline\n• ROI calculations');
+        }
+
+        // Auto-refresh projections every 5 minutes
+        setInterval(loadProjections, 300000);
+    </script>
+</body>
+</html>

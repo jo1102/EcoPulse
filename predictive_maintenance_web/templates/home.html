@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoPulse - Energy Management Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --eco-green: #28a745;
+            --eco-blue: #007bff;
+            --eco-orange: #fd7e14;
+            --eco-dark: #2c3e50;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: rgba(44, 62, 80, 0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+        }
+        
+        .metric-card {
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--eco-green), var(--eco-blue));
+        }
+        
+        .metric-value {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--eco-green), var(--eco-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+        
+        .metric-label {
+            font-size: 1.1rem;
+            color: var(--eco-dark);
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .metric-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+        
+        .power-icon { color: #ffc107; }
+        .clean-icon { color: var(--eco-green); }
+        .netzero-icon { color: var(--eco-blue); }
+        
+        .maintenance-item {
+            border-left: 4px solid;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+        
+        .maintenance-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .urgency-critical { border-left-color: #dc3545; background: rgba(220, 53, 69, 0.1); }
+        .urgency-high { border-left-color: #fd7e14; background: rgba(253, 126, 20, 0.1); }
+        .urgency-medium { border-left-color: #ffc107; background: rgba(255, 193, 7, 0.1); }
+        .urgency-low { border-left-color: var(--eco-green); background: rgba(40, 167, 69, 0.1); }
+        
+        .chart-container {
+            height: 350px;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .nav-pills .nav-link {
+            border-radius: 20px;
+            padding: 0.75rem 1.5rem;
+            margin: 0 0.25rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, var(--eco-green), var(--eco-blue));
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .loading { animation: pulse 1.5s ease-in-out infinite; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark sticky-top">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-leaf"></i> EcoPulse Energy Management
+            </span>
+            <div class="d-flex">
+                <a href="/current-status" class="btn btn-outline-light me-2">
+                    <i class="fas fa-tachometer-alt"></i> Current Status
+                </a>
+                <a href="/future-projection" class="btn btn-outline-light">
+                    <i class="fas fa-chart-line"></i> Future Projections
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Main Metrics Row -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-4">
+                <div class="card metric-card">
+                    <div class="metric-icon power-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="metric-value" id="power-percentage">--</div>
+                    <div class="metric-label">Power Efficiency</div>
+                    <div class="mt-2">
+                        <small class="text-muted">Overall system power output</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card metric-card">
+                    <div class="metric-icon clean-icon">
+                        <i class="fas fa-wind"></i>
+                    </div>
+                    <div class="metric-value" id="clean-percentage">--</div>
+                    <div class="metric-label">Clean Energy</div>
+                    <div class="mt-2">
+                        <small class="text-muted">Renewable energy percentage</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card metric-card">
+                    <div class="metric-icon netzero-icon">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <div class="metric-value" id="netzero-percentage">--</div>
+                    <div class="metric-label">Net Zero Progress</div>
+                    <div class="mt-2">
+                        <small class="text-muted">Carbon neutrality achievement</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bolt text-warning"></i> Power Distribution
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="power-chart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-wind text-success"></i> Clean Energy Mix
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="clean-chart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-leaf text-primary"></i> Net Zero Components
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="netzero-chart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UFD Data Integration Info -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-database text-info"></i> 
+                            Real Sensor Data Integration
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="ufd-integration-info" class="row">
+                            <div class="col-12 text-center loading">
+                                <div class="spinner-border text-info" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading UFD sensor data integration status...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Critical Maintenance Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle text-danger"></i> 
+                            Critical Maintenance Items
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="maintenance-items" class="row">
+                            <div class="col-12 text-center loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading maintenance data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHomeData();
+            loadUFDIntegrationInfo();
+        });
+
+        async function loadHomeData() {
+            try {
+                const response = await fetch('/api/home_data');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Update main metrics
+                    document.getElementById('power-percentage').textContent = data.power_percentage + '%';
+                    document.getElementById('clean-percentage').textContent = data.clean_percentage + '%';
+                    document.getElementById('netzero-percentage').textContent = data.net_zero_percentage + '%';
+                    
+                    // Create charts
+                    createPowerChart(data.power_percentage);
+                    createCleanChart(data.clean_percentage);
+                    createNetZeroChart(data.net_zero_percentage);
+                    
+                    // Display maintenance items
+                    displayMaintenanceItems(data.critical_maintenance);
+                }
+            } catch (error) {
+                console.error('Error loading home data:', error);
+                document.getElementById('maintenance-items').innerHTML = 
+                    '<div class="col-12"><div class="alert alert-danger">Error loading data</div></div>';
+            }
+        }
+
+        async function loadUFDIntegrationInfo() {
+            try {
+                const response = await fetch('/api/ufd_data_analysis');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    displayUFDIntegrationInfo(data.analysis);
+                } else {
+                    document.getElementById('ufd-integration-info').innerHTML = 
+                        '<div class="col-12"><div class="alert alert-warning">UFD data not available</div></div>';
+                }
+            } catch (error) {
+                console.error('Error loading UFD integration info:', error);
+                document.getElementById('ufd-integration-info').innerHTML = 
+                    '<div class="col-12"><div class="alert alert-danger">Error loading UFD data</div></div>';
+            }
+        }
+
+        function displayUFDIntegrationInfo(analysis) {
+            const container = document.getElementById('ufd-integration-info');
+            
+            let html = `
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="metric-value text-info">${analysis.meters_analyzed}</div>
+                        <div class="metric-label">UFD Meters</div>
+                        <small class="text-muted">Integrated sensors</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="metric-value text-success">${analysis.models_trained}</div>
+                        <div class="metric-label">ML Models</div>
+                        <small class="text-muted">Trained on sensor data</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="mb-3">Real-Time Sensor Mapping:</h6>
+                    <div class="row">
+            `;
+            
+            const meterMapping = {
+                'A': { name: 'Solar Panels', icon: 'fa-sun', color: 'warning' },
+                'B': { name: 'Wind Turbines', icon: 'fa-wind', color: 'info' },
+                'C': { name: 'Hydro Generators', icon: 'fa-tint', color: 'primary' },
+                'D': { name: 'Gas Systems', icon: 'fa-fire', color: 'danger' }
+            };
+            
+            Object.entries(analysis.meter_details).forEach(([meterId, details]) => {
+                const mapping = meterMapping[meterId];
+                const healthColor = details.current_health < 2 ? 'success' : 
+                                  details.current_health < 3 ? 'warning' : 'danger';
+                
+                html += `
+                    <div class="col-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="fas ${mapping.icon} text-${mapping.color} me-2"></i>
+                            <div class="flex-grow-1">
+                                <small><strong>Meter ${meterId}</strong>: ${mapping.name}</small><br>
+                                <small class="text-muted">
+                                    Health: <span class="badge bg-${healthColor}">${details.current_health}</span>
+                                    | Samples: ${details.total_samples}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            html += `
+                <div class="col-12 mt-3">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Live Integration:</strong> This dashboard uses real UFD (Ultrasonic Flow meter Degradation) 
+                        sensor data to predict maintenance needs. Each energy source is mapped to actual sensor readings 
+                        from flow meters, with machine learning models trained on historical patterns.
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function createPowerChart(percentage) {
+            const data = [{
+                type: 'pie',
+                values: [percentage, 100 - percentage],
+                labels: ['Active Power', 'Available Capacity'],
+                hole: 0.6,
+                marker: {
+                    colors: ['#ffc107', '#e9ecef']
+                },
+                textinfo: 'none',
+                hovertemplate: '%{label}: %{value}%<extra></extra>'
+            }];
+
+            const layout = {
+                showlegend: false,
+                margin: { t: 20, b: 20, l: 20, r: 20 },
+                annotations: [{
+                    text: percentage + '%<br><span style="font-size:12px;">Power</span>',
+                    font: { size: 18, color: '#495057' },
+                    showarrow: false,
+                    x: 0.5,
+                    y: 0.5
+                }],
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+
+            Plotly.newPlot('power-chart', data, layout, {responsive: true, displayModeBar: false});
+        }
+
+        function createCleanChart(percentage) {
+            const data = [{
+                type: 'pie',
+                values: [percentage, 100 - percentage],
+                labels: ['Clean Energy', 'Traditional'],
+                hole: 0.6,
+                marker: {
+                    colors: ['#28a745', '#e9ecef']
+                },
+                textinfo: 'none',
+                hovertemplate: '%{label}: %{value}%<extra></extra>'
+            }];
+
+            const layout = {
+                showlegend: false,
+                margin: { t: 20, b: 20, l: 20, r: 20 },
+                annotations: [{
+                    text: percentage + '%<br><span style="font-size:12px;">Clean</span>',
+                    font: { size: 18, color: '#495057' },
+                    showarrow: false,
+                    x: 0.5,
+                    y: 0.5
+                }],
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+
+            Plotly.newPlot('clean-chart', data, layout, {responsive: true, displayModeBar: false});
+        }
+
+        function createNetZeroChart(percentage) {
+            const data = [{
+                type: 'pie',
+                values: [percentage, 100 - percentage],
+                labels: ['Net Zero Progress', 'Remaining'],
+                hole: 0.6,
+                marker: {
+                    colors: ['#007bff', '#e9ecef']
+                },
+                textinfo: 'none',
+                hovertemplate: '%{label}: %{value}%<extra></extra>'
+            }];
+
+            const layout = {
+                showlegend: false,
+                margin: { t: 20, b: 20, l: 20, r: 20 },
+                annotations: [{
+                    text: percentage + '%<br><span style="font-size:12px;">Net Zero</span>',
+                    font: { size: 18, color: '#495057' },
+                    showarrow: false,
+                    x: 0.5,
+                    y: 0.5
+                }],
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+
+            Plotly.newPlot('netzero-chart', data, layout, {responsive: true, displayModeBar: false});
+        }
+
+        function displayMaintenanceItems(items) {
+            const container = document.getElementById('maintenance-items');
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> No critical maintenance items at this time.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                const urgencyClass = `urgency-${item.urgency.toLowerCase()}`;
+                const urgencyIcon = item.urgency === 'Critical' ? 'exclamation-triangle' : 
+                                   item.urgency === 'High' ? 'exclamation-circle' : 
+                                   item.urgency === 'Medium' ? 'exclamation' : 'info-circle';
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="maintenance-item ${urgencyClass}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-${urgencyIcon}"></i> ${item.title}
+                                    </h6>
+                                    <p class="mb-2 small text-muted">${item.description}</p>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-tag"></i> ${item.category}
+                                        </span>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-dollar-sign"></i> $${item.cost.toLocaleString()}
+                                        </span>
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-bolt"></i> ${item.energy_impact}% Impact
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-end ms-3">
+                                    <span class="badge bg-${item.urgency === 'Critical' ? 'danger' : 
+                                                           item.urgency === 'High' ? 'warning' : 
+                                                           item.urgency === 'Medium' ? 'info' : 'success'}">
+                                        ${item.urgency}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            loadHomeData();
+            loadUFDIntegrationInfo();
+        }, 30000);
+    </script>
+</body>
+</html>

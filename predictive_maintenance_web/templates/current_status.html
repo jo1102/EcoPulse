@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Current Status - EcoPulse Energy Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --eco-green: #28a745;
+            --eco-blue: #007bff;
+            --eco-orange: #fd7e14;
+            --eco-dark: #2c3e50;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: rgba(44, 62, 80, 0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .energy-gauge {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            margin: 20px 0;
+        }
+        
+        .maintenance-toggle {
+            background: linear-gradient(135deg, var(--eco-green), var(--eco-blue));
+            border: none;
+            border-radius: 20px;
+            padding: 0.5rem 1.5rem;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .maintenance-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .maintenance-item {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .maintenance-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .maintenance-item.expanded {
+            border-color: var(--eco-blue);
+            background: rgba(0, 123, 255, 0.05);
+        }
+        
+        .urgency-critical { border-left: 4px solid #dc3545; }
+        .urgency-high { border-left: 4px solid #fd7e14; }
+        .urgency-medium { border-left: 4px solid #ffc107; }
+        .urgency-low { border-left: 4px solid var(--eco-green); }
+        
+        .chart-container {
+            height: 350px;
+        }
+        
+        .energy-bar {
+            position: relative;
+            height: 300px;
+            width: 60px;
+            background: #e9ecef;
+            border-radius: 30px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        
+        .energy-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(0deg, #28a745 0%, #ffc107 50%, #dc3545 100%);
+            border-radius: 30px;
+            transition: height 1s ease;
+        }
+        
+        .energy-percentage {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--eco-dark);
+        }
+        
+        .collapse-content {
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark sticky-top">
+        <div class="container-fluid">
+            <a href="/" class="navbar-brand">
+                <i class="fas fa-leaf"></i> EcoPulse - Current Status
+            </a>
+            <div class="d-flex">
+                <a href="/" class="btn btn-outline-light me-2">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="/future-projection" class="btn btn-outline-light">
+                    <i class="fas fa-chart-line"></i> Future Projections
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Left Side - Energy Bar -->
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-header bg-transparent text-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-battery-three-quarters text-success"></i>
+                            Energy Level
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="energy-gauge">
+                            <div class="energy-bar">
+                                <div class="energy-fill" id="energy-fill"></div>
+                            </div>
+                            <div class="energy-percentage" id="energy-percentage">0%</div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">Current Power Output</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side - Energy Sources Chart -->
+            <div class="col-md-9">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar text-primary"></i>
+                            Energy Sources Distribution
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="energy-sources-chart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-wrench text-warning"></i>
+                            Maintenance Management
+                        </h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="toggleMaintenanceView()">
+                                <i class="fas fa-eye" id="toggle-icon"></i>
+                                <span id="toggle-text">Show All</span>
+                            </button>
+                            <select class="form-select form-select-sm d-inline-block w-auto" id="category-filter" onchange="filterMaintenance()">
+                                <option value="all">All Categories</option>
+                                <option value="solar">Solar</option>
+                                <option value="wind">Wind</option>
+                                <option value="hydro">Hydro</option>
+                                <option value="oil_gas">Oil & Gas</option>
+                                <option value="storage">Storage</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="maintenance-items-container">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading maintenance data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage History Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history text-info"></i>
+                            Usage History & Predictive Analysis
+                        </h5>
+                        <select class="form-select form-select-sm w-auto" id="history-days" onchange="loadUsageHistory()">
+                            <option value="7">Last 7 Days</option>
+                            <option value="14">Last 14 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                        </select>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div id="usage-history-chart" class="chart-container"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div id="history-summary">
+                                    <h6>Performance Summary</h6>
+                                    <div id="summary-stats"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let maintenanceData = [];
+        let showAllMaintenance = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentStatus();
+            loadMaintenanceItems();
+            loadUsageHistory();
+        });
+
+        async function loadCurrentStatus() {
+            try {
+                const response = await fetch('/api/energy_sources');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    updateEnergyBar(data.total_power);
+                    createEnergySourcesChart(data.energy_sources);
+                }
+            } catch (error) {
+                console.error('Error loading current status:', error);
+            }
+        }
+
+        function updateEnergyBar(percentage) {
+            const fill = document.getElementById('energy-fill');
+            const percentageText = document.getElementById('energy-percentage');
+            
+            fill.style.height = percentage + '%';
+            percentageText.textContent = percentage + '%';
+        }
+
+        function createEnergySourcesChart(sources) {
+            const sourceNames = Object.keys(sources);
+            const currentValues = sourceNames.map(source => sources[source].current);
+            const capacityValues = sourceNames.map(source => sources[source].capacity);
+            const efficiencyValues = sourceNames.map(source => sources[source].efficiency);
+
+            const data = [
+                {
+                    x: sourceNames.map(name => name.charAt(0).toUpperCase() + name.slice(1).replace('_', ' & ')),
+                    y: currentValues,
+                    name: 'Current Output',
+                    type: 'bar',
+                    marker: { color: '#28a745' }
+                },
+                {
+                    x: sourceNames.map(name => name.charAt(0).toUpperCase() + name.slice(1).replace('_', ' & ')),
+                    y: capacityValues,
+                    name: 'Total Capacity',
+                    type: 'bar',
+                    marker: { color: '#007bff' }
+                }
+            ];
+
+            const layout = {
+                title: 'Energy Source Performance',
+                xaxis: { title: 'Energy Sources' },
+                yaxis: { title: 'Output (MW)' },
+                barmode: 'group',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+
+            Plotly.newPlot('energy-sources-chart', data, layout, {responsive: true});
+        }
+
+        async function loadMaintenanceItems() {
+            try {
+                const category = document.getElementById('category-filter').value;
+                const response = await fetch(`/api/maintenance_items?category=${category}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    maintenanceData = data.maintenance_items;
+                    displayMaintenanceItems(maintenanceData);
+                }
+            } catch (error) {
+                console.error('Error loading maintenance items:', error);
+            }
+        }
+
+        function displayMaintenanceItems(items) {
+            const container = document.getElementById('maintenance-items-container');
+            let html = '';
+
+            items.forEach(item => {
+                const urgencyClass = `urgency-${item.urgency.toLowerCase()}`;
+                const statusColor = item.status === 'Completed' ? 'success' : 
+                                   item.status === 'In Progress' ? 'warning' : 'secondary';
+                
+                html += `
+                    <div class="maintenance-item ${urgencyClass}" onclick="toggleMaintenanceDetails(${item.id})">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">${item.title}</h6>
+                                <p class="mb-2 text-muted small">${item.description}</p>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <span class="badge bg-${statusColor}">${item.status}</span>
+                                    <span class="badge bg-info">${item.category}</span>
+                                    <span class="badge bg-warning">${item.urgency} Priority</span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-primary">$${item.cost.toLocaleString()}</div>
+                                <small class="text-muted">${item.estimated_days} days</small>
+                            </div>
+                        </div>
+                        <div class="collapse" id="details-${item.id}">
+                            <div class="collapse-content">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Impact Analysis</h6>
+                                        <p><strong>Energy Impact:</strong> ${item.energy_impact}%</p>
+                                        <p><strong>Estimated Duration:</strong> ${item.estimated_days} days</p>
+                                        <p><strong>Cost Breakdown:</strong> $${item.cost.toLocaleString()}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Notifications Sent</h6>
+                                        <ul class="list-unstyled">
+                                            ${item.notified.map(person => `<li><i class="fas fa-user"></i> ${person}</li>`).join('')}
+                                        </ul>
+                                        <button class="btn btn-sm btn-primary mt-2" onclick="updateMaintenanceStatus(${item.id})">
+                                            Update Status
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function toggleMaintenanceDetails(itemId) {
+            const details = document.getElementById(`details-${itemId}`);
+            const isExpanded = details.classList.contains('show');
+            
+            // Close all other details
+            document.querySelectorAll('.collapse.show').forEach(el => {
+                bootstrap.Collapse.getInstance(el).hide();
+            });
+            
+            // Toggle current details
+            if (!isExpanded) {
+                new bootstrap.Collapse(details, {toggle: true});
+            }
+        }
+
+        function toggleMaintenanceView() {
+            showAllMaintenance = !showAllMaintenance;
+            const toggleText = document.getElementById('toggle-text');
+            const toggleIcon = document.getElementById('toggle-icon');
+            
+            if (showAllMaintenance) {
+                toggleText.textContent = 'Show Critical';
+                toggleIcon.className = 'fas fa-eye-slash';
+                displayMaintenanceItems(maintenanceData);
+            } else {
+                toggleText.textContent = 'Show All';
+                toggleIcon.className = 'fas fa-eye';
+                const criticalItems = maintenanceData.filter(item => 
+                    item.urgency === 'Critical' || item.urgency === 'High'
+                );
+                displayMaintenanceItems(criticalItems);
+            }
+        }
+
+        function filterMaintenance() {
+            loadMaintenanceItems();
+        }
+
+        async function loadUsageHistory() {
+            try {
+                const days = document.getElementById('history-days').value;
+                const response = await fetch(`/api/usage_history?days=${days}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    createUsageHistoryChart(data.history);
+                    displayHistorySummary(data.summary);
+                }
+            } catch (error) {
+                console.error('Error loading usage history:', error);
+            }
+        }
+
+        function createUsageHistoryChart(history) {
+            const dates = history.map(h => h.date);
+            
+            const data = [
+                {
+                    x: dates,
+                    y: history.map(h => h.power_generated),
+                    name: 'Power Generated',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#ffc107' }
+                },
+                {
+                    x: dates,
+                    y: history.map(h => h.clean_energy),
+                    name: 'Clean Energy %',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#28a745' }
+                },
+                {
+                    x: dates,
+                    y: history.map(h => h.net_zero_score),
+                    name: 'Net Zero Score',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#007bff' }
+                }
+            ];
+
+            const layout = {
+                title: 'Performance Trends',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Performance Metrics' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                hovermode: 'x unified'
+            };
+
+            Plotly.newPlot('usage-history-chart', data, layout, {responsive: true});
+        }
+
+        function displayHistorySummary(summary) {
+            const container = document.getElementById('summary-stats');
+            
+            container.innerHTML = `
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Avg Power:</span>
+                        <strong>${summary.avg_power} MW</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Avg Clean Energy:</span>
+                        <strong>${summary.avg_clean}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Avg Net Zero:</span>
+                        <strong>${summary.avg_net_zero}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Maintenance Events:</span>
+                        <strong>${summary.total_maintenance_events}</strong>
+                    </div>
+                </div>
+                <div class="alert alert-info small">
+                    <i class="fas fa-info-circle"></i>
+                    Predictive models show ${summary.avg_clean > 70 ? 'excellent' : 'good'} clean energy performance.
+                    ${summary.total_maintenance_events > 5 ? 'Consider preventive maintenance scheduling.' : 'Maintenance frequency is optimal.'}
+                </div>
+            `;
+        }
+
+        async function updateMaintenanceStatus(itemId) {
+            // Simple status update demo
+            const newStatus = prompt('Enter new status (Pending, In Progress, Completed):');
+            if (newStatus) {
+                try {
+                    const response = await fetch(`/api/update_maintenance/${itemId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    
+                    if (response.ok) {
+                        loadMaintenanceItems(); // Refresh the list
+                        alert('Status updated successfully!');
+                    }
+                } catch (error) {
+                    console.error('Error updating status:', error);
+                }
+            }
+        }
+
+        // Auto-refresh every 60 seconds
+        setInterval(() => {
+            loadCurrentStatus();
+            loadUsageHistory();
+        }, 60000);
+    </script>
+</body>
+</html>
