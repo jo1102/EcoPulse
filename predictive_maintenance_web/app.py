@@ -41,7 +41,7 @@ class EnergyManagementSystem:
         self.energy_sources = {
             'solar': {'current': 35.2, 'capacity': 100, 'efficiency': 85.1},
             'wind': {'current': 28.7, 'capacity': 100, 'efficiency': 78.3},
-            'hydro': {'current': 15.6, 'capacity': 50, 'efficiency': 92.1},
+            'hydrogen': {'current': 15.6, 'capacity': 50, 'efficiency': 92.1},
             'oil_gas': {'current': 20.5, 'capacity': 80, 'efficiency': 67.8}
         }
         self.load_ufd_data()
@@ -56,7 +56,7 @@ class EnergyManagementSystem:
         meter_to_source = {
             'A': 'solar',      # Meter A -> Solar panels
             'B': 'wind',       # Meter B -> Wind turbines  
-            'C': 'hydro',      # Meter C -> Hydro generators
+            'C': 'hydrogen',   # Meter C -> Hydrogen generators
             'D': 'oil_gas'     # Meter D -> Gas systems
         }
         
@@ -148,16 +148,25 @@ class EnergyManagementSystem:
         
         maintenance_items = []
         
-        # Map meters to energy systems
+        # Map meters to energy systems with more diverse maintenance categories
         meter_systems = {
             'A': {'name': 'Solar Panel Array', 'type': 'Solar'},
             'B': {'name': 'Wind Turbine System', 'type': 'Wind'}, 
-            'C': {'name': 'Hydro Generator Unit', 'type': 'Hydro'},
+            'C': {'name': 'Hydrogen Generator Unit', 'type': 'Hydrogen'},
             'D': {'name': 'Gas Processing Plant', 'type': 'Oil & Gas'}
         }
         
+        # Additional maintenance categories
+        additional_systems = [
+            {'name': 'Battery Storage System', 'type': 'Storage', 'meter_ref': 'A'},
+            {'name': 'Grid Connection Infrastructure', 'type': 'Grid', 'meter_ref': 'B'},
+            {'name': 'HVAC Cooling System', 'type': 'HVAC', 'meter_ref': 'C'},
+            {'name': 'Electrical Distribution Panel', 'type': 'Electrical', 'meter_ref': 'D'}
+        ]
+        
         item_id = 1
         
+        # Generate primary maintenance items from UFD data
         for meter_id, data in self.ufd_data.items():
             try:
                 # Analyze recent sensor data
@@ -165,82 +174,163 @@ class EnergyManagementSystem:
                 avg_health = recent_data['health_state'].mean()
                 health_trend = self.energy_sources[meter_systems[meter_id]['type'].lower().replace(' & ', '_')]['degradation_trend']
                 
-                # Get key sensor readings
-                if meter_id == 'A':  # Solar
-                    avg_gain = recent_data[[col for col in data.columns if 'gain' in col]].mean().mean()
-                    flow_variance = recent_data[[col for col in data.columns if 'flow_velocity' in col]].var().mean()
-                elif meter_id == 'B':  # Wind  
-                    signal_strength = recent_data[[col for col in data.columns if 'signal_strength' in col]].mean().mean()
-                    turbulence = recent_data[[col for col in data.columns if 'turbulence' in col]].mean().mean()
-                elif meter_id == 'C':  # Hydro
-                    sound_speed_avg = recent_data[[col for col in data.columns if 'sound_speed' in col]].mean().mean()
-                    signal_quality = recent_data[[col for col in data.columns if 'signal_quality' in col]].mean().mean()
-                elif meter_id == 'D':  # Gas
-                    pressure_variance = recent_data[['profile_factor', 'symmetry']].var().mean()
-                    transit_time_avg = recent_data[[col for col in data.columns if 'transit_time' in col]].mean().mean()
-                
-                # Generate maintenance items based on health state and sensor data
-                if avg_health >= 3.5:  # Critical condition
-                    urgency = 'Critical'
-                    cost_multiplier = 2.0
-                    days_multiplier = 1.5
-                elif avg_health >= 2.5:  # High priority
-                    urgency = 'High'  
-                    cost_multiplier = 1.2
-                    days_multiplier = 1.0
-                elif avg_health >= 1.5:  # Medium priority
-                    urgency = 'Medium'
-                    cost_multiplier = 0.8
-                    days_multiplier = 0.7
-                else:  # Low priority
-                    urgency = 'Low'
-                    cost_multiplier = 0.5
-                    days_multiplier = 0.5
-                
-                # Create specific maintenance items based on meter type and sensor data
+                # Get key sensor readings and generate maintenance item
                 system_info = meter_systems[meter_id]
-                base_cost = {'Solar': 15000, 'Wind': 25000, 'Hydro': 18000, 'Oil & Gas': 22000}[system_info['type']]
-                base_days = {'Solar': 3, 'Wind': 5, 'Hydro': 4, 'Oil & Gas': 6}[system_info['type']]
-                
-                # Generate maintenance description based on sensor anomalies
-                if meter_id == 'A' and avg_gain > 35.8:  # Solar - High gain indicates sensor issues
-                    description = f"Solar panel sensor calibration needed. Gain levels at {avg_gain:.1f}, indicating measurement drift."
-                elif meter_id == 'B' and turbulence > 2.0:  # Wind - High turbulence
-                    description = f"Wind turbine experiencing high turbulence ({turbulence:.2f}). Blade inspection required."
-                elif meter_id == 'C' and sound_speed_avg < 1400:  # Hydro - Low sound speed
-                    description = f"Hydro system acoustic anomaly detected. Sound speed at {sound_speed_avg:.0f} m/s."
-                elif meter_id == 'D' and pressure_variance > 0.1:  # Gas - Pressure instability
-                    description = f"Gas system pressure instability detected. Variance at {pressure_variance:.3f}."
-                else:
-                    description = f"Routine maintenance based on health state analysis (current: {avg_health:.2f})."
-                
-                maintenance_item = {
-                    'id': item_id,
-                    'title': f'{system_info["name"]} - {urgency} Maintenance',
-                    'description': description,
-                    'urgency': urgency,
-                    'cost': int(base_cost * cost_multiplier),
-                    'estimated_days': int(base_days * days_multiplier),
-                    'energy_impact': round((avg_health - 1) * 5, 1),  # Convert health state to energy impact %
-                    'notified': self.get_notification_list(system_info['type'], urgency),
-                    'category': system_info['type'],
-                    'status': self.determine_status(avg_health, health_trend),
-                    'meter_data': {
-                        'meter_id': meter_id,
-                        'health_state': round(avg_health, 2),
-                        'trend': health_trend,
-                        'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M')
-                    }
-                }
-                
+                maintenance_item = self._create_maintenance_item(item_id, system_info, meter_id, avg_health, health_trend, recent_data)
                 maintenance_items.append(maintenance_item)
                 item_id += 1
                 
             except Exception as e:
                 print(f"Error generating maintenance for meter {meter_id}: {e}")
         
+        # Generate additional maintenance items for supporting systems
+        for system in additional_systems:
+            try:
+                # Use related meter's health data as baseline
+                related_data = self.ufd_data[system['meter_ref']].tail(10)
+                avg_health = related_data['health_state'].mean() + np.random.uniform(-0.5, 0.5)  # Add variation
+                avg_health = max(1.0, min(4.0, avg_health))  # Keep in valid range
+                
+                health_trend = np.random.uniform(-0.02, 0.02)  # Random trend for supporting systems
+                
+                maintenance_item = self._create_maintenance_item(item_id, system, system['meter_ref'], avg_health, health_trend, related_data)
+                maintenance_items.append(maintenance_item)
+                item_id += 1
+                
+            except Exception as e:
+                print(f"Error generating maintenance for {system['name']}: {e}")
+        
         self.maintenance_items = maintenance_items
         print(f"Generated {len(maintenance_items)} maintenance items from UFD data")
+        
+        # Generate usage history based on UFD data patterns
+        self.generate_usage_history()
+    
+    def _create_maintenance_item(self, item_id, system_info, meter_ref, avg_health, health_trend, sensor_data):
+        """Helper method to create a maintenance item"""
+        
+        # Determine priority based on health state
+        if avg_health >= 3.5:
+            urgency = 'Critical'
+            cost_multiplier = 2.0
+            days_multiplier = 1.5
+        elif avg_health >= 2.5:
+            urgency = 'High'
+            cost_multiplier = 1.2
+            days_multiplier = 1.0
+        elif avg_health >= 1.5:
+            urgency = 'Medium'
+            cost_multiplier = 0.8
+            days_multiplier = 0.7
+        else:
+            urgency = 'Low'
+            cost_multiplier = 0.5
+            days_multiplier = 0.5
+        
+        # Base costs and timeframes by system type
+        system_configs = {
+            'Solar': {'cost': 15000, 'days': 3},
+            'Wind': {'cost': 25000, 'days': 5},
+            'Hydrogen': {'cost': 18000, 'days': 4},
+            'Oil & Gas': {'cost': 22000, 'days': 6},
+            'Storage': {'cost': 12000, 'days': 2},
+            'Grid': {'cost': 8000, 'days': 1},
+            'HVAC': {'cost': 5000, 'days': 1},
+            'Electrical': {'cost': 7000, 'days': 2}
+        }
+        
+        config = system_configs.get(system_info['type'], {'cost': 10000, 'days': 3})
+        
+        # Generate specific maintenance descriptions
+        descriptions = self._generate_maintenance_description(system_info['type'], avg_health, sensor_data)
+        
+        # Calculate due date based on urgency
+        due_days = np.random.randint(1, int(config['days'] * days_multiplier) + 5)
+        due_date = (datetime.now() + timedelta(days=due_days)).strftime('%Y-%m-%d')
+        
+        return {
+            'id': item_id,
+            'equipment': system_info['name'],
+            'issue': descriptions,
+            'priority': urgency,
+            'cost': int(config['cost'] * cost_multiplier),
+            'due_date': due_date,
+            'estimated_days': int(config['days'] * days_multiplier),
+            'energy_impact': round((avg_health - 1) * 5, 1),
+            'category': system_info['type'],
+            'status': self.determine_status(avg_health, health_trend),
+            'meter_data': {
+                'meter_id': meter_ref,
+                'health_state': round(avg_health, 2),
+                'trend': health_trend,
+                'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M')
+            }
+        }
+    
+    def _generate_maintenance_description(self, system_type, health_state, sensor_data):
+        """Generate realistic maintenance descriptions based on system type and health"""
+        
+        descriptions = {
+            'Solar': [
+                'Panel cleaning and inspection required',
+                'Inverter performance optimization needed',
+                'Wiring connection check and tightening',
+                'Solar panel efficiency degradation detected'
+            ],
+            'Wind': [
+                'Turbine blade balancing and inspection',
+                'Gearbox oil change and lubrication',
+                'Generator bearing replacement needed',
+                'Power curve optimization required'
+            ],
+            'Hydrogen': [
+                'Electrolyzer membrane replacement',
+                'Gas purity testing and calibration',
+                'Pressure vessel safety inspection',
+                'Catalyst regeneration required'
+            ],
+            'Oil & Gas': [
+                'Pipeline pressure testing needed',
+                'Compressor maintenance scheduled',
+                'Safety valve inspection required',
+                'Flow meter calibration needed'
+            ],
+            'Storage': [
+                'Battery cell balancing required',
+                'Thermal management system check',
+                'Power electronics maintenance',
+                'State of health assessment needed'
+            ],
+            'Grid': [
+                'Transformer oil testing required',
+                'Breaker contact inspection needed',
+                'Protection relay calibration',
+                'Power quality monitoring upgrade'
+            ],
+            'HVAC': [
+                'Filter replacement and cleaning',
+                'Refrigerant level check required',
+                'Compressor performance evaluation',
+                'Duct cleaning and maintenance'
+            ],
+            'Electrical': [
+                'Panel board inspection required',
+                'Cable insulation testing needed',
+                'Ground fault testing scheduled',
+                'Load balancing optimization'
+            ]
+        }
+        
+        # Select description based on health state severity
+        options = descriptions.get(system_type, ['General maintenance required'])
+        if health_state >= 3.0:
+            return options[0]  # Most critical issue
+        elif health_state >= 2.0:
+            return options[1] if len(options) > 1 else options[0]
+        elif health_state >= 1.5:
+            return options[2] if len(options) > 2 else options[0]
+        else:
+            return options[3] if len(options) > 3 else options[0]
         
         # Generate usage history based on UFD data patterns
         self.generate_usage_history()
@@ -285,7 +375,7 @@ class EnergyManagementSystem:
                 'net_zero_score': round(55 + 30 * base_performance * seasonal_factor, 1),
                 'solar_output': round(280 * self.energy_sources['solar']['efficiency']/100 * weather_factor, 1),
                 'wind_output': round(230 * self.energy_sources['wind']['efficiency']/100 * weather_factor, 1),
-                'hydro_output': round(140 * self.energy_sources['hydro']['efficiency']/100, 1),
+                'hydrogen_output': round(140 * self.energy_sources['hydrogen']['efficiency']/100, 1),
                 'gas_output': round(180 * self.energy_sources['oil_gas']['efficiency']/100, 1),
                 'maintenance_events': daily_maintenance_events,
                 'efficiency_drop': round(max(0, (1 - daily_health_impact) * 10), 2)  # Efficiency drop based on health
@@ -299,7 +389,7 @@ class EnergyManagementSystem:
         base_contacts = {
             'Solar': ['Solar Team Lead', 'Renewable Operations'],
             'Wind': ['Wind Technician', 'Turbine Specialist'], 
-            'Hydro': ['Hydro Engineer', 'Water Systems Team'],
+            'Hydrogen': ['Hydrogen Engineer', 'Fuel Cell Systems Team'],
             'Oil & Gas': ['Gas Operations', 'Safety Officer']
         }
         
@@ -388,12 +478,12 @@ class EnergyManagementSystem:
     
     def get_critical_maintenance_items(self, limit=5):
         """Get most critical maintenance items"""
-        # Sort by urgency and energy impact
-        urgency_priority = {'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1}
+        # Sort by priority and energy impact
+        priority_values = {'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1}
         
         sorted_items = sorted(
             self.maintenance_items, 
-            key=lambda x: (urgency_priority.get(x['urgency'], 0), x['energy_impact']), 
+            key=lambda x: (priority_values.get(x.get('priority', 'Low'), 0), x.get('energy_impact', 0)), 
             reverse=True
         )
         
@@ -473,15 +563,37 @@ def future_projection():
 def get_home_data():
     """Get data for home page dashboard"""
     try:
+        # Ensure all required data exists
+        if not hasattr(ems, 'current_status'):
+            ems.current_status = {
+                'power_percentage': 87.5,
+                'clean_percentage': 72.3,
+                'net_zero_percentage': 68.9
+            }
+        
+        if not hasattr(ems, 'maintenance_items') or not ems.maintenance_items:
+            ems.generate_realistic_maintenance_data()
+        
+        # Get critical maintenance items
+        critical_maintenance = ems.get_critical_maintenance_items(3)
+        
         return jsonify({
             'status': 'success',
-            'power_percentage': ems.current_status['power_percentage'],
-            'clean_percentage': ems.current_status['clean_percentage'],
-            'net_zero_percentage': ems.current_status['net_zero_percentage'],
-            'critical_maintenance': ems.get_critical_maintenance_items(3)
+            'power_percentage': ems.current_status.get('power_percentage', 87.5),
+            'clean_percentage': ems.current_status.get('clean_percentage', 72.3),
+            'net_zero_percentage': ems.current_status.get('net_zero_percentage', 68.9),
+            'critical_maintenance': critical_maintenance
         })
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+        print(f"Error in get_home_data: {str(e)}")
+        return jsonify({
+            'status': 'error', 
+            'message': str(e),
+            'power_percentage': 87.5,
+            'clean_percentage': 72.3,
+            'net_zero_percentage': 68.9,
+            'critical_maintenance': []
+        })
 
 @app.route('/api/energy_sources')
 def get_energy_sources():
@@ -586,7 +698,7 @@ def get_ufd_data_analysis():
                 'features': len(data.columns) - 1,  # Exclude health_state
                 'current_health': round(recent_samples['health_state'].mean(), 2),
                 'health_trend': ems.energy_sources[
-                    {'A': 'solar', 'B': 'wind', 'C': 'hydro', 'D': 'oil_gas'}[meter_id]
+                    {'A': 'solar', 'B': 'wind', 'C': 'hydrogen', 'D': 'oil_gas'}[meter_id]
                 ]['degradation_trend'],
                 'recent_readings': {
                     'avg_flatness_ratio': round(recent_samples.get('flatness_ratio', pd.Series([0])).mean(), 3),

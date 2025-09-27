@@ -9,41 +9,55 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         :root {
-            --aramco-red: #C41E3A;
-            --aramco-black: #1C1C1C;
+            --aramco-green: #84BD00;
+            --aramco-dark-green: #00843D;
+            --aramco-blue: #00A3E0;
+            --aramco-dark-blue: #0033A0;
             --aramco-white: #FFFFFF;
-            --aramco-gray: #6C757D;
-            --aramco-dark-red: #8B1538;
+            --aramco-dark-gray: #323232;
         }
         
         body {
-            background: linear-gradient(135deg, #1C1C1C 0%, #2C2C2C 100%);
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--aramco-white);
+            color: var(--aramco-dark-gray);
         }
         
         .navbar {
-            background: var(--aramco-black) !important;
+            background: var(--aramco-white) !important;
             backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--aramco-blue);
+        }
+        
+        .btn-outline-light {
+            color: var(--aramco-blue) !important;
+            border-color: var(--aramco-blue) !important;
+            font-weight: bold;
+        }
+        
+        .btn-outline-light:hover {
+            background-color: var(--aramco-blue) !important;
+            border-color: var(--aramco-blue) !important;
+            color: white !important;
         }
         
         .card {
-            background: rgba(28, 28, 28, 0.95);
+            background: var(--aramco-white);
             backdrop-filter: blur(10px);
-            border: 1px solid var(--aramco-red);
+            border: 2px solid var(--aramco-blue);
             border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(196, 30, 58, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 163, 224, 0.1);
             transition: all 0.3s ease;
-            color: var(--aramco-white);
+            color: var(--aramco-dark-gray);
         }
         
         .projection-metric {
             text-align: center;
             padding: 1.5rem;
             border-radius: 10px;
-            background: linear-gradient(135deg, rgba(196, 30, 58, 0.1), rgba(28, 28, 28, 0.3));
-            border: 1px solid var(--aramco-red);
+            background: linear-gradient(135deg, rgba(132, 189, 0, 0.1), rgba(0, 163, 224, 0.1));
+            border: 1px solid var(--aramco-green);
             transition: all 0.3s ease;
         }
         
@@ -55,11 +69,11 @@
         .metric-value {
             font-size: 2.5rem;
             font-weight: 800;
-            color: var(--aramco-red);
+            color: var(--aramco-green);
         }
         
         .text-muted {
-            color: var(--aramco-white) !important;
+            color: #6C757D !important;
         }
         
         .chart-container {
@@ -68,7 +82,7 @@
         }
         
         .timeline-item {
-            border-left: 3px solid var(--aramco-red);
+            border-left: 3px solid var(--aramco-blue);
             padding-left: 1rem;
             margin-bottom: 1.5rem;
             position: relative;
@@ -82,26 +96,26 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: var(--aramco-red);
+            background: var(--aramco-blue);
         }
         
         .timeline-date {
             font-weight: 600;
-            color: var(--aramco-red);
+            color: var(--aramco-blue);
             font-size: 0.9rem;
         }
         
         .cost-breakdown {
-            background: rgba(196, 30, 58, 0.1);
-            border-left: 4px solid var(--aramco-red);
+            background: rgba(0, 132, 61, 0.1);
+            border-left: 4px solid var(--aramco-dark-green);
             padding: 1rem;
             border-radius: 8px;
             margin: 1rem 0;
         }
         
         .recommendation-item {
-            background: rgba(196, 30, 58, 0.1);
-            border: 1px solid rgba(196, 30, 58, 0.2);
+            background: rgba(132, 189, 0, 0.1);
+            border: 1px solid rgba(132, 189, 0, 0.2);
             border-radius: 8px;
             padding: 1rem;
             margin: 0.5rem 0;
@@ -109,35 +123,35 @@
         }
         
         .recommendation-item:hover {
-            background: rgba(196, 30, 58, 0.2);
+            background: rgba(132, 189, 0, 0.2);
             transform: translateX(5px);
         }
         
         .projection-controls {
-            background: rgba(28, 28, 28, 0.9);
-            border: 1px solid var(--aramco-red);
+            background: var(--aramco-white);
+            border: 2px solid var(--aramco-blue);
             border-radius: 10px;
             padding: 1rem;
             margin-bottom: 1rem;
-            color: var(--aramco-white);
+            color: var(--aramco-dark-gray);
         }
         
         .form-select, .form-control {
-            background-color: var(--aramco-black);
-            border-color: var(--aramco-red);
-            color: var(--aramco-white);
+            background-color: var(--aramco-white);
+            border-color: var(--aramco-blue);
+            color: var(--aramco-dark-gray);
         }
         
         .form-select:focus, .form-control:focus {
-            background-color: var(--aramco-black);
-            border-color: var(--aramco-red);
-            color: var(--aramco-white);
-            box-shadow: 0 0 0 0.25rem rgba(196, 30, 58, 0.25);
+            background-color: var(--aramco-white);
+            border-color: var(--aramco-green);
+            color: var(--aramco-dark-gray);
+            box-shadow: 0 0 0 0.25rem rgba(132, 189, 0, 0.25);
         }
         
         .energy-bar {
             height: 40px;
-            background: linear-gradient(90deg, var(--aramco-red) 0%, var(--aramco-dark-red) 100%);
+            background: linear-gradient(90deg, var(--aramco-dark-gray) 0%, #2C2C2C 100%);
             border-radius: 20px;
             position: relative;
             margin: 1rem 0;
@@ -145,7 +159,7 @@
         
         .energy-level {
             height: 100%;
-            background: linear-gradient(90deg, #FF6B6B 0%, var(--aramco-red) 50%, #C41E3A 100%);
+            background: linear-gradient(90deg, var(--aramco-green) 0%, var(--aramco-blue) 50%, var(--aramco-dark-green) 100%);
             border-radius: 20px;
             transition: width 1.5s ease-in-out;
             position: relative;
@@ -175,27 +189,24 @@
             <div class="col-12">
                 <div class="projection-controls">
                     <div class="row align-items-center">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label for="projection-period" class="form-label">Projection Period:</label>
                             <select class="form-select" id="projection-period" onchange="loadProjections()">
                                 <option value="30">30 Days</option>
-                                <option value="60">60 Days</option>
                                 <option value="90" selected>90 Days</option>
                                 <option value="180">6 Months</option>
+                                <option value="365">1 Year</option>
+                                <option value="1825">5 Years</option>
+                                <option value="9125">25 Years (Until 2050)</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label for="scenario-type" class="form-label">Scenario:</label>
                             <select class="form-select" id="scenario-type" onchange="loadProjections()">
                                 <option value="current">Current Trajectory</option>
                                 <option value="optimistic">Optimistic</option>
                                 <option value="pessimistic">Pessimistic</option>
                             </select>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <button class="btn btn-primary" onclick="generateReport()">
-                                <i class="fas fa-file-pdf"></i> Generate Report
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -302,7 +313,7 @@
                 <div class="card">
                     <div class="card-header bg-transparent">
                         <h5 class="mb-0">
-                            <i class="fas fa-bolt" style="color: var(--aramco-red);"></i>
+                            <i class="fas fa-bolt" style="color: var(--aramco-green);"></i>
                             Current Power Output
                         </h5>
                     </div>
@@ -345,37 +356,20 @@
             </div>
         </div>
 
-        <!-- Energy Sources Distribution -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-transparent">
-                        <h5 class="mb-0">
-                            <i class="fas fa-chart-pie" style="color: var(--aramco-red);"></i>
-                            Energy Sources Distribution
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="energy-sources-pie" class="chart-container"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Recommendations -->
         <div class="row mt-4">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header bg-transparent">
                         <h5 class="mb-0">
-                            <i class="fas fa-lightbulb" style="color: var(--aramco-red);"></i>
+                            <i class="fas fa-lightbulb" style="color: var(--aramco-green);"></i>
                             AI-Powered Recommendations
                         </h5>
                     </div>
                     <div class="card-body">
                         <div id="recommendations-container">
                             <div class="text-center">
-                                <div class="spinner-border" style="color: var(--aramco-red);" role="status">
+                                <div class="spinner-border" style="color: var(--aramco-blue);" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
                                 <p class="mt-2 text-white">Analyzing patterns and generating recommendations...</p>
@@ -394,57 +388,67 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadProjections();
             loadCurrentPowerOutput();
-            loadEnergySourcesDistribution();
         });
 
         async function loadCurrentPowerOutput() {
             try {
-                const response = await fetch('/api/current_status');
+                const response = await fetch('/api/energy_sources');
                 const data = await response.json();
                 
                 if (data.status === 'success') {
                     const energySources = data.energy_sources;
-                    const totalOutput = energySources.solar.current + energySources.wind.current + 
-                                      energySources.hydro.current + energySources.oil_gas.current;
+                    const totalOutput = Object.values(energySources).reduce((sum, source) => sum + source.current, 0);
+                    const maxCapacity = 300; // Maximum total capacity
                     
                     document.getElementById('current-total-output').textContent = totalOutput.toFixed(1);
-                    document.getElementById('current-percentage').textContent = Math.round((totalOutput / 300) * 100);
-                    document.getElementById('current-energy-level').style.width = Math.min((totalOutput / 300) * 100, 100) + '%';
+                    const percentage = Math.round((totalOutput / maxCapacity) * 100);
+                    document.getElementById('current-percentage').textContent = percentage;
+                    document.getElementById('current-energy-level').style.width = Math.min(percentage, 100) + '%';
                     
+                    // Update individual sources
                     document.getElementById('solar-current').textContent = energySources.solar.current;
                     document.getElementById('wind-current').textContent = energySources.wind.current;
                     document.getElementById('hydro-current').textContent = energySources.hydro.current;
                     document.getElementById('gas-current').textContent = energySources.oil_gas.current;
                     
-                    // Create gauge chart
-                    createPowerOutputGauge(totalOutput);
+                    // Create enhanced gauge chart
+                    createPowerOutputGauge(totalOutput, percentage);
                 }
             } catch (error) {
                 console.error('Error loading current power output:', error);
+                // Fallback data
+                document.getElementById('current-total-output').textContent = '100.0';
+                document.getElementById('current-percentage').textContent = '75';
+                document.getElementById('current-energy-level').style.width = '75%';
+                createPowerOutputGauge(100, 75);
             }
         }
         
-        function createPowerOutputGauge(currentOutput) {
+        function createPowerOutputGauge(currentOutput, percentage = null) {
+            if (percentage === null) {
+                percentage = Math.round((currentOutput / 300) * 100);
+            }
+            
             const data = [{
                 type: 'indicator',
                 mode: 'gauge+number+delta',
                 value: currentOutput,
                 domain: { x: [0, 1], y: [0, 1] },
-                title: { text: 'MW Output', font: { color: 'white' } },
-                delta: { reference: 250, increasing: { color: '#C41E3A' } },
+                title: { text: 'MW Output', font: { color: '#323232', size: 14, weight: 'bold' } },
+                delta: { reference: 250, increasing: { color: '#84BD00' } },
                 gauge: {
-                    axis: { range: [null, 300], tickcolor: 'white', tickfont: { color: 'white' } },
-                    bar: { color: '#C41E3A' },
-                    bgcolor: 'rgba(28,28,28,0.8)',
-                    borderwidth: 2,
-                    bordercolor: '#C41E3A',
+                    axis: { range: [null, 300], tickcolor: '#323232', tickfont: { color: '#323232', weight: 'bold' } },
+                    bar: { color: '#00A3E0', thickness: 0.8 },
+                    bgcolor: 'rgba(248,249,250,0.8)',
+                    borderwidth: 3,
+                    bordercolor: '#84BD00',
                     steps: [
-                        { range: [0, 150], color: 'rgba(196,30,58,0.2)' },
-                        { range: [150, 250], color: 'rgba(196,30,58,0.5)' },
-                        { range: [250, 300], color: 'rgba(196,30,58,0.8)' }
+                        { range: [0, 150], color: 'rgba(132,189,0,0.2)' },
+                        { range: [150, 250], color: 'rgba(0,163,224,0.5)' },
+                        { range: [250, 300], color: 'rgba(0,132,61,0.8)' }
                     ],
                     threshold: {
-                        line: { color: 'white', width: 4 },
+                        line: { color: '#323232', width: 4 },
                         thickness: 0.75,
                         value: 280
                     }
@@ -454,71 +458,13 @@
             const layout = {
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: 'white', size: 12 },
+                font: { color: '#323232', size: 12 },
                 margin: { t: 40, r: 25, l: 25, b: 25 }
             };
             
             Plotly.newPlot('power-output-gauge', data, layout, {displayModeBar: false, responsive: true});
         }
         
-        async function loadEnergySourcesDistribution() {
-            try {
-                const response = await fetch('/api/current_status');
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    createEnergySourcesPie(data.energy_sources);
-                }
-            } catch (error) {
-                console.error('Error loading energy sources:', error);
-            }
-        }
-        
-        function createEnergySourcesPie(energySources) {
-            const data = [{
-                type: 'pie',
-                labels: ['Solar', 'Wind', 'Hydro', 'Oil & Gas'],
-                values: [
-                    energySources.solar.current,
-                    energySources.wind.current,
-                    energySources.hydro.current,
-                    energySources.oil_gas.current
-                ],
-                marker: {
-                    colors: ['#C41E3A', '#8B1538', '#FF6B6B', '#4A0E1A']
-                },
-                textinfo: 'label+percent+value',
-                textposition: 'outside',
-                textfont: {
-                    color: 'white',
-                    size: 12
-                },
-                hovertemplate: '<b>%{label}</b><br>Output: %{value} MW<br>Share: %{percent}<extra></extra>'
-            }];
-            
-            const layout = {
-                title: {
-                    text: 'Current Energy Distribution',
-                    font: { color: 'white', size: 16 },
-                    x: 0.5
-                },
-                paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: 'white' },
-                showlegend: true,
-                legend: {
-                    orientation: 'h',
-                    x: 0.5,
-                    xanchor: 'center',
-                    y: -0.1,
-                    font: { color: 'white' }
-                },
-                margin: { t: 60, r: 50, l: 50, b: 80 }
-            };
-            
-            Plotly.newPlot('energy-sources-pie', data, layout, {displayModeBar: false, responsive: true});
-        }
-
         async function loadProjections() {
             try {
                 const days = document.getElementById('projection-period').value;
@@ -579,8 +525,8 @@
                     name: 'Power Generation (MW)',
                     type: 'scatter',
                     mode: 'lines+markers',
-                    line: { color: '#C41E3A', width: 3 },
-                    marker: { color: '#C41E3A', size: 6 }
+                    line: { color: '#84BD00', width: 3 },
+                    marker: { color: '#84BD00', size: 6 }
                 },
                 {
                     x: dates,
@@ -588,8 +534,8 @@
                     name: 'Clean Energy %',
                     type: 'scatter',
                     mode: 'lines+markers',
-                    line: { color: '#8B1538', width: 3 },
-                    marker: { color: '#8B1538', size: 6 }
+                    line: { color: '#00A3E0', width: 3 },
+                    marker: { color: '#00A3E0', size: 6 }
                 },
                 {
                     x: dates,
@@ -597,35 +543,35 @@
                     name: 'Net Zero Score %',
                     type: 'scatter',
                     mode: 'lines+markers',
-                    line: { color: '#FF6B6B', width: 3 },
-                    marker: { color: '#FF6B6B', size: 6 }
+                    line: { color: '#00843D', width: 3 },
+                    marker: { color: '#00843D', size: 6 }
                 }
             ];
 
             const layout = {
                 title: {
                     text: 'Future Performance Projections',
-                    font: { color: 'white', size: 18 }
+                    font: { color: '#323232', size: 18 }
                 },
                 xaxis: { 
-                    title: { text: 'Date', font: { color: 'white' } },
+                    title: { text: 'Date', font: { color: '#323232' } },
                     showgrid: true,
-                    gridcolor: 'rgba(196,30,58,0.3)',
-                    tickfont: { color: 'white' }
+                    gridcolor: 'rgba(132,189,0,0.3)',
+                    tickfont: { color: '#323232' }
                 },
                 yaxis: { 
-                    title: { text: 'Performance Metrics', font: { color: 'white' } },
+                    title: { text: 'Performance Metrics', font: { color: '#323232' } },
                     showgrid: true,
-                    gridcolor: 'rgba(196,30,58,0.3)',
-                    tickfont: { color: 'white' }
+                    gridcolor: 'rgba(0,163,224,0.3)',
+                    tickfont: { color: '#323232' }
                 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(28,28,28,0.8)',
+                plot_bgcolor: 'rgba(248,249,250,0.5)',
                 hovermode: 'x unified',
                 legend: {
                     orientation: 'h',
                     y: -0.2,
-                    font: { color: 'white' }
+                    font: { color: '#323232' }
                 }
             };
 
@@ -787,10 +733,6 @@
             });
 
             container.innerHTML = html;
-        }
-
-        function generateReport() {
-            alert('Report generation functionality would integrate with PDF generation service.\n\nThis would include:\n• Executive summary\n• Detailed projections\n• Cost analysis\n• Implementation timeline\n• ROI calculations');
         }
 
         // Auto-refresh projections every 5 minutes

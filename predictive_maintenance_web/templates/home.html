@@ -9,30 +9,35 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         :root {
-            --eco-green: #28a745;
-            --eco-blue: #007bff;
-            --eco-orange: #fd7e14;
-            --eco-dark: #2c3e50;
+            --aramco-green: #84BD00;
+            --aramco-dark-green: #00843D;
+            --aramco-blue: #00A3E0;
+            --aramco-dark-blue: #0033A0;
+            --aramco-white: #FFFFFF;
+            --aramco-dark-gray: #323232;
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--aramco-dark-gray);
         }
         
         .navbar {
-            background: rgba(44, 62, 80, 0.95) !important;
+            background: var(--aramco-white) !important;
             backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--aramco-blue);
         }
         
         .card {
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--aramco-white);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid var(--aramco-blue);
             border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 163, 224, 0.1);
             transition: all 0.3s ease;
+            color: var(--aramco-dark-gray);
         }
         
         .card:hover {
@@ -54,22 +59,19 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, var(--eco-green), var(--eco-blue));
+            background: linear-gradient(90deg, var(--aramco-green), var(--aramco-blue));
         }
         
         .metric-value {
             font-size: 3.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, var(--eco-green), var(--eco-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--aramco-green);
             line-height: 1.2;
         }
         
         .metric-label {
             font-size: 1.1rem;
-            color: var(--eco-dark);
+            color: var(--aramco-dark-gray);
             font-weight: 600;
             margin-top: 0.5rem;
         }
@@ -77,20 +79,112 @@
         .metric-icon {
             font-size: 2.5rem;
             margin-bottom: 1rem;
-            opacity: 0.7;
+            opacity: 0.8;
         }
         
-        .power-icon { color: #ffc107; }
-        .clean-icon { color: var(--eco-green); }
-        .netzero-icon { color: var(--eco-blue); }
+        .power-icon { color: var(--aramco-green); }
+        .clean-icon { color: var(--aramco-blue); }
+        .netzero-icon { color: var(--aramco-dark-green); }
         
         .maintenance-item {
             border-left: 4px solid;
             padding: 1rem;
             margin: 0.5rem 0;
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.9);
+            background: var(--aramco-white);
+            border: 1px solid #E9ECEF;
             transition: all 0.3s ease;
+            color: var(--aramco-dark-gray);
+        }
+        
+        .maintenance-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .urgency-critical { border-left-color: #dc3545; background: rgba(220, 53, 69, 0.1); }
+        .urgency-high { border-left-color: #fd7e14; background: rgba(253, 126, 20, 0.1); }
+        .urgency-medium { border-left-color: #ffc107; background: rgba(255, 193, 7, 0.1); }
+        .urgency-low { border-left-color: var(--aramco-green); background: rgba(40, 167, 69, 0.1); }
+        
+        .chart-container {
+            height: 350px;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .navbar-brand {
+            color: var(--aramco-dark-gray) !important;
+            font-weight: bold;
+        }
+        
+        .btn-outline-light {
+            color: var(--aramco-blue) !important;
+            border-color: var(--aramco-blue) !important;
+            font-weight: bold;
+        }
+        
+        .btn-outline-light:hover {
+            background-color: var(--aramco-blue) !important;
+            border-color: var(--aramco-blue) !important;
+            color: white !important;
+        }
+        
+        h1, h2, h3, h4, h5, h6, .card-title {
+            color: var(--aramco-dark-gray) !important;
+            font-weight: bold;
+        }
+        
+        .metric-card {
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--aramco-green), var(--aramco-blue));
+        }
+        
+        .metric-value {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--aramco-green);
+            line-height: 1.2;
+        }
+        
+        .metric-label {
+            font-size: 1.1rem;
+            color: var(--aramco-dark-gray);
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .metric-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+        
+        .power-icon { color: var(--aramco-green); }
+        .clean-icon { color: var(--aramco-blue); }
+        .netzero-icon { color: var(--aramco-dark-green); }
+        
+        .maintenance-item {
+            border-left: 4px solid;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            background: var(--aramco-white);
+            border: 1px solid #E9ECEF;
+            transition: all 0.3s ease;
+            color: var(--aramco-dark-gray);
         }
         
         .maintenance-item:hover {
@@ -148,48 +242,6 @@
     </nav>
 
     <div class="container-fluid mt-4">
-        <!-- Main Metrics Row -->
-        <div class="row mb-4">
-            <div class="col-md-4 mb-4">
-                <div class="card metric-card">
-                    <div class="metric-icon power-icon">
-                        <i class="fas fa-bolt"></i>
-                    </div>
-                    <div class="metric-value" id="power-percentage">--</div>
-                    <div class="metric-label">Power Efficiency</div>
-                    <div class="mt-2">
-                        <small class="text-muted">Overall system power output</small>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-4 mb-4">
-                <div class="card metric-card">
-                    <div class="metric-icon clean-icon">
-                        <i class="fas fa-wind"></i>
-                    </div>
-                    <div class="metric-value" id="clean-percentage">--</div>
-                    <div class="metric-label">Clean Energy</div>
-                    <div class="mt-2">
-                        <small class="text-muted">Renewable energy percentage</small>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-4 mb-4">
-                <div class="card metric-card">
-                    <div class="metric-icon netzero-icon">
-                        <i class="fas fa-leaf"></i>
-                    </div>
-                    <div class="metric-value" id="netzero-percentage">--</div>
-                    <div class="metric-label">Net Zero Progress</div>
-                    <div class="mt-2">
-                        <small class="text-muted">Carbon neutrality achievement</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Charts Row -->
         <div class="row mb-4">
             <div class="col-md-4">
@@ -290,27 +342,38 @@
 
         async function loadHomeData() {
             try {
+                console.log('Loading home data...');
                 const response = await fetch('/api/home_data');
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('Response data:', data);
                 
                 if (data.status === 'success') {
-                    // Update main metrics
-                    document.getElementById('power-percentage').textContent = data.power_percentage + '%';
-                    document.getElementById('clean-percentage').textContent = data.clean_percentage + '%';
-                    document.getElementById('netzero-percentage').textContent = data.net_zero_percentage + '%';
-                    
-                    // Create charts
+                    // Create charts with the data
                     createPowerChart(data.power_percentage);
                     createCleanChart(data.clean_percentage);
                     createNetZeroChart(data.net_zero_percentage);
                     
                     // Display maintenance items
                     displayMaintenanceItems(data.critical_maintenance);
+                    console.log('Home data loaded successfully');
+                } else {
+                    console.warn('API returned error status:', data.message);
+                    throw new Error(data.message || 'Failed to load data');
                 }
             } catch (error) {
                 console.error('Error loading home data:', error);
+                
+                // Show error in charts
+                document.getElementById('power-chart').innerHTML = 
+                    '<div class="alert alert-danger">Error loading power data<br><small>' + error.message + '</small></div>';
+                document.getElementById('clean-chart').innerHTML = 
+                    '<div class="alert alert-danger">Error loading clean energy data<br><small>' + error.message + '</small></div>';
+                document.getElementById('netzero-chart').innerHTML = 
+                    '<div class="alert alert-danger">Error loading net zero data<br><small>' + error.message + '</small></div>';
+                    
                 document.getElementById('maintenance-items').innerHTML = 
-                    '<div class="col-12"><div class="alert alert-danger">Error loading data</div></div>';
+                    '<div class="col-12"><div class="alert alert-danger">Error loading maintenance data<br><small>' + error.message + '</small></div></div>';
             }
         }
 
@@ -358,7 +421,7 @@
             const meterMapping = {
                 'A': { name: 'Solar Panels', icon: 'fa-sun', color: 'warning' },
                 'B': { name: 'Wind Turbines', icon: 'fa-wind', color: 'info' },
-                'C': { name: 'Hydro Generators', icon: 'fa-tint', color: 'primary' },
+                'C': { name: 'Hydrogen Generators', icon: 'fa-bolt', color: 'primary' },
                 'D': { name: 'Gas Systems', icon: 'fa-fire', color: 'danger' }
             };
             
@@ -508,38 +571,29 @@
 
             let html = '';
             items.forEach(item => {
-                const urgencyClass = `urgency-${item.urgency.toLowerCase()}`;
-                const urgencyIcon = item.urgency === 'Critical' ? 'exclamation-triangle' : 
-                                   item.urgency === 'High' ? 'exclamation-circle' : 
-                                   item.urgency === 'Medium' ? 'exclamation' : 'info-circle';
+                const priorityClass = `urgency-${item.priority.toLowerCase()}`;
+                const priorityIcon = item.priority === 'Critical' ? 'exclamation-triangle' : 
+                                   item.priority === 'High' ? 'exclamation-circle' : 
+                                   item.priority === 'Medium' ? 'exclamation' : 'info-circle';
                 
                 html += `
                     <div class="col-md-6 mb-3">
-                        <div class="maintenance-item ${urgencyClass}">
+                        <div class="maintenance-item ${priorityClass}">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <h6 class="mb-2">
-                                        <i class="fas fa-${urgencyIcon}"></i> ${item.title}
+                                        <i class="fas fa-${priorityIcon}"></i> ${item.equipment}
                                     </h6>
-                                    <p class="mb-2 small text-muted">${item.description}</p>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <span class="badge bg-secondary">
-                                            <i class="fas fa-tag"></i> ${item.category}
-                                        </span>
-                                        <span class="badge bg-info">
-                                            <i class="fas fa-dollar-sign"></i> $${item.cost.toLocaleString()}
-                                        </span>
-                                        <span class="badge bg-warning">
-                                            <i class="fas fa-bolt"></i> ${item.energy_impact}% Impact
-                                        </span>
+                                    <p class="mb-2 text-muted small">${item.issue}</p>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <span class="badge bg-${getPriorityBadgeClass(item.priority)}">${item.priority}</span>
+                                        <span class="badge bg-info">${item.category}</span>
+                                        <span class="badge bg-secondary">${item.status}</span>
                                     </div>
                                 </div>
-                                <div class="text-end ms-3">
-                                    <span class="badge bg-${item.urgency === 'Critical' ? 'danger' : 
-                                                           item.urgency === 'High' ? 'warning' : 
-                                                           item.urgency === 'Medium' ? 'info' : 'success'}">
-                                        ${item.urgency}
-                                    </span>
+                                <div class="text-end">
+                                    <div class="fw-bold text-danger">$${item.cost.toLocaleString()}</div>
+                                    <small class="text-muted">${item.due_date}</small>
                                 </div>
                             </div>
                         </div>
@@ -548,6 +602,15 @@
             });
 
             container.innerHTML = html;
+        }
+
+        function getPriorityBadgeClass(priority) {
+            switch(priority) {
+                case 'Critical': return 'danger';
+                case 'High': return 'warning';
+                case 'Medium': return 'info';
+                default: return 'secondary';
+            }
         }
 
         // Auto-refresh every 30 seconds

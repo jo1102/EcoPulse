@@ -9,41 +9,67 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         :root {
-            --eco-green: #28a745;
-            --eco-blue: #007bff;
-            --eco-orange: #fd7e14;
-            --eco-dark: #2c3e50;
+            --aramco-green: #84BD00;
+            --aramco-dark-green: #00843D;
+            --aramco-blue: #00A3E0;
+            --aramco-dark-blue: #0033A0;
+            --aramco-white: #FFFFFF;
+            --aramco-dark-gray: #323232;
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--aramco-dark-gray);
         }
         
         .navbar {
-            background: rgba(44, 62, 80, 0.95) !important;
+            background: var(--aramco-white) !important;
             backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--aramco-blue);
+        }
+        
+        .navbar-brand, .navbar-brand:hover {
+            color: var(--aramco-dark-gray) !important;
+        }
+        
+        .btn-outline-light {
+            color: var(--aramco-blue) !important;
+            border-color: var(--aramco-blue) !important;
+            font-weight: bold;
+        }
+        
+        .btn-outline-light:hover {
+            background-color: var(--aramco-blue) !important;
+            border-color: var(--aramco-blue) !important;
+            color: white !important;
         }
         
         .card {
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--aramco-white);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid var(--aramco-blue);
             border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 163, 224, 0.1);
             transition: all 0.3s ease;
+            color: var(--aramco-dark-gray);
+        }
+        
+        .card-header {
+            border-bottom: 1px solid var(--aramco-blue);
+            background: linear-gradient(135deg, rgba(132, 189, 0, 0.1), rgba(0, 163, 224, 0.1)) !important;
         }
         
         .energy-gauge {
             position: relative;
             width: 100%;
-            height: 200px;
-            margin: 20px 0;
+            height: 300px;
+            margin: 30px 0;
         }
         
         .maintenance-toggle {
-            background: linear-gradient(135deg, var(--eco-green), var(--eco-blue));
+            background: linear-gradient(135deg, var(--aramco-green), var(--aramco-blue));
             border: none;
             border-radius: 20px;
             padding: 0.5rem 1.5rem;
@@ -58,39 +84,43 @@
         }
         
         .maintenance-item {
-            border: 1px solid #dee2e6;
+            border: 2px solid #E9ECEF;
             border-radius: 10px;
             padding: 1rem;
             margin: 0.5rem 0;
             transition: all 0.3s ease;
             cursor: pointer;
+            background: var(--aramco-white);
         }
         
         .maintenance-item:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 163, 224, 0.15);
             transform: translateY(-2px);
+            border-color: var(--aramco-blue);
         }
         
         .maintenance-item.expanded {
-            border-color: var(--eco-blue);
-            background: rgba(0, 123, 255, 0.05);
+            border-color: var(--aramco-blue);
+            background: rgba(0, 163, 224, 0.05);
         }
         
-        .urgency-critical { border-left: 4px solid #dc3545; }
-        .urgency-high { border-left: 4px solid #fd7e14; }
-        .urgency-medium { border-left: 4px solid #ffc107; }
-        .urgency-low { border-left: 4px solid var(--eco-green); }
+        .urgency-critical { border-left: 4px solid #DC3545; }
+        .urgency-high { border-left: 4px solid #FD7E14; }
+        .urgency-medium { border-left: 4px solid #FFC107; }
+        .urgency-low { border-left: 4px solid var(--aramco-green); }
         
         .chart-container {
             height: 350px;
+            min-height: 250px;
         }
         
         .energy-bar {
             position: relative;
-            height: 300px;
-            width: 60px;
-            background: #e9ecef;
-            border-radius: 30px;
+            height: 400px;
+            width: 80px;
+            background: #F8F9FA;
+            border: 3px solid var(--aramco-blue);
+            border-radius: 40px;
             margin: 0 auto;
             overflow: hidden;
         }
@@ -99,29 +129,42 @@
             position: absolute;
             bottom: 0;
             width: 100%;
-            background: linear-gradient(0deg, #28a745 0%, #ffc107 50%, #dc3545 100%);
-            border-radius: 30px;
+            background: linear-gradient(0deg, var(--aramco-green) 0%, var(--aramco-blue) 50%, var(--aramco-dark-blue) 100%);
+            border-radius: 37px;
             transition: height 1s ease;
         }
         
         .energy-percentage {
             position: absolute;
-            top: -40px;
+            top: -50px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 1.5rem;
+            font-size: 2rem;
             font-weight: bold;
-            color: var(--eco-dark);
+            color: var(--aramco-dark-gray);
         }
         
         .collapse-content {
-            background: rgba(248, 249, 250, 0.8);
+            background: rgba(132, 189, 0, 0.1);
+            border: 1px solid rgba(132, 189, 0, 0.2);
             border-radius: 8px;
             padding: 1rem;
             margin-top: 1rem;
         }
-    </style>
-</head>
+        .form-select {
+            border-color: var(--aramco-blue);
+            color: var(--aramco-dark-gray);
+        }
+        
+        .form-select:focus {
+            border-color: var(--aramco-green);
+            box-shadow: 0 0 0 0.25rem rgba(132, 189, 0, 0.25);
+        }
+        
+        .text-muted {
+            color: #6C757D !important;
+        }
+    </style></head>
 <body>
     <nav class="navbar navbar-dark sticky-top">
         <div class="container-fluid">
@@ -139,7 +182,7 @@
         </div>
     </nav>
 
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-2">
         <div class="row">
             <!-- Left Side - Energy Bar -->
             <div class="col-md-3">
@@ -150,31 +193,59 @@
                             Energy Level
                         </h5>
                     </div>
-                    <div class="card-body text-center">
+                    <div class="card-body text-center" style="margin-top: 2rem;">
                         <div class="energy-gauge">
                             <div class="energy-bar">
                                 <div class="energy-fill" id="energy-fill"></div>
                             </div>
                             <div class="energy-percentage" id="energy-percentage">0%</div>
                         </div>
-                        <div class="mt-3">
-                            <small class="text-muted">Current Power Output</small>
+                        <div class="text-center mt-4">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Side - Energy Sources Chart -->
+            <!-- Right Side - Charts Row -->
             <div class="col-md-9">
-                <div class="card">
-                    <div class="card-header bg-transparent">
-                        <h5 class="mb-0">
-                            <i class="fas fa-chart-bar text-primary"></i>
-                            Energy Sources Distribution
-                        </h5>
+                <div class="row">
+                    <!-- Energy Sources Chart -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-transparent">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-pie text-primary"></i>
+                                    Energy Sources Distribution
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="energy-sources-chart" class="chart-container" style="height: 500px;"></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div id="energy-sources-chart" class="chart-container"></div>
+                    
+                    <!-- Usage History Chart -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-history text-info"></i>
+                                    Usage History
+                                </h5>
+                                <select class="form-select form-select-sm w-auto" id="history-days" onchange="loadUsageHistory()" style="width: auto!important; min-width: 120px;">
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="14">Last 14 Days</option>
+                                    <option value="30" selected>Last 30 Days</option>
+                                </select>
+                            </div>
+                            <div class="card-body">
+                                <div id="usage-history-chart" class="chart-container" style="height: 350px;"></div>
+                                <div id="history-summary" class="mt-3">
+                                    <h6 class="mb-2">Live Performance</h6>
+                                    <div id="summary-stats"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -188,6 +259,7 @@
                         <h5 class="mb-0">
                             <i class="fas fa-wrench text-warning"></i>
                             Maintenance Management
+                            <span class="badge bg-warning ms-2" id="maintenance-count">Loading...</span>
                         </h5>
                         <div>
                             <button class="btn btn-sm btn-outline-primary me-2" onclick="toggleMaintenanceView()">
@@ -198,15 +270,18 @@
                                 <option value="all">All Categories</option>
                                 <option value="solar">Solar</option>
                                 <option value="wind">Wind</option>
-                                <option value="hydro">Hydro</option>
+                                <option value="hydrogen">Hydrogen</option>
                                 <option value="oil_gas">Oil & Gas</option>
                                 <option value="storage">Storage</option>
+                                <option value="grid">Grid</option>
+                                <option value="hvac">HVAC</option>
+                                <option value="electrical">Electrical</option>
                             </select>
                         </div>
                     </div>
                     <div class="card-body">
-                        <div id="maintenance-items-container">
-                            <div class="text-center">
+                        <div id="maintenance-items-container" class="row g-3">
+                            <div class="col-12 text-center">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
@@ -217,35 +292,22 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Usage History Section -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-history text-info"></i>
-                            Usage History & Predictive Analysis
-                        </h5>
-                        <select class="form-select form-select-sm w-auto" id="history-days" onchange="loadUsageHistory()">
-                            <option value="7">Last 7 Days</option>
-                            <option value="14">Last 14 Days</option>
-                            <option value="30" selected>Last 30 Days</option>
-                        </select>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div id="usage-history-chart" class="chart-container"></div>
-                            </div>
-                            <div class="col-md-4">
-                                <div id="history-summary">
-                                    <h6>Performance Summary</h6>
-                                    <div id="summary-stats"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Status Update Modal -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="statusModalLabel">Update Maintenance Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Content will be dynamically updated -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmStatusUpdate()">Update Status</button>
                 </div>
             </div>
         </div>
@@ -257,9 +319,12 @@
         let showAllMaintenance = false;
 
         document.addEventListener('DOMContentLoaded', function() {
-            loadCurrentStatus();
+            loadCurrentStatusLive();
             loadMaintenanceItems();
             loadUsageHistory();
+            
+            // Initialize live data simulation
+            lastUpdateTime = Date.now();
         });
 
         async function loadCurrentStatus() {
@@ -280,43 +345,78 @@
             const fill = document.getElementById('energy-fill');
             const percentageText = document.getElementById('energy-percentage');
             
+            // Smooth transition for height changes
             fill.style.height = percentage + '%';
             percentageText.textContent = percentage + '%';
+            
+            // Add color coding based on energy level
+            if (percentage > 85) {
+                fill.style.background = 'linear-gradient(0deg, #28a745 0%, #84BD00 50%, #00A3E0 100%)';
+            } else if (percentage > 70) {
+                fill.style.background = 'linear-gradient(0deg, #ffc107 0%, #84BD00 50%, #00A3E0 100%)';
+            } else {
+                fill.style.background = 'linear-gradient(0deg, #dc3545 0%, #fd7e14 50%, #ffc107 100%)';
+            }
+            
+            // Add subtle animation to percentage text when value changes
+            percentageText.style.transform = 'translateX(-50%) scale(1.1)';
+            setTimeout(() => {
+                percentageText.style.transform = 'translateX(-50%) scale(1)';
+            }, 200);
         }
 
         function createEnergySourcesChart(sources) {
             const sourceNames = Object.keys(sources);
             const currentValues = sourceNames.map(source => sources[source].current);
-            const capacityValues = sourceNames.map(source => sources[source].capacity);
             const efficiencyValues = sourceNames.map(source => sources[source].efficiency);
 
-            const data = [
-                {
-                    x: sourceNames.map(name => name.charAt(0).toUpperCase() + name.slice(1).replace('_', ' & ')),
-                    y: currentValues,
-                    name: 'Current Output',
-                    type: 'bar',
-                    marker: { color: '#28a745' }
-                },
-                {
-                    x: sourceNames.map(name => name.charAt(0).toUpperCase() + name.slice(1).replace('_', ' & ')),
-                    y: capacityValues,
-                    name: 'Total Capacity',
-                    type: 'bar',
-                    marker: { color: '#007bff' }
+            // Format source names properly
+            const formattedNames = sourceNames.map(name => {
+                switch(name) {
+                    case 'oil_gas': return 'Oil & Gas';
+                    case 'solar': return 'Solar';
+                    case 'wind': return 'Wind';
+                    case 'hydrogen': return 'Hydrogen';
+                    default: return name.charAt(0).toUpperCase() + name.slice(1);
                 }
-            ];
+            });
+
+            const data = [{
+                values: currentValues,
+                labels: formattedNames,
+                type: 'pie',
+                textinfo: 'label+percent+value',
+                texttemplate: '%{label}<br>%{value} MW<br>%{percent}',
+                marker: {
+                    colors: ['#FFD700', '#87CEEB', '#32CD32', '#FF6B35'],
+                    line: { color: '#FFFFFF', width: 2 }
+                },
+                hovertemplate: '<b>%{label}</b><br>' +
+                              'Output: %{value} MW<br>' +
+                              'Share: %{percent}<br>' +
+                              '<extra></extra>'
+            }];
 
             const layout = {
-                title: 'Energy Source Performance',
-                xaxis: { title: 'Energy Sources' },
-                yaxis: { title: 'Output (MW)' },
-                barmode: 'group',
+                title: {
+                    text: 'Energy Sources Distribution',
+                    font: { color: '#323232', size: 20, weight: 'bold' }
+                },
                 paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(0,0,0,0)'
+                plot_bgcolor: 'rgba(248,249,250,0.5)',
+                margin: { t: 80, b: 60, l: 50, r: 50 },
+                font: { family: 'Segoe UI, Arial, sans-serif', size: 13 },
+                showlegend: true,
+                legend: {
+                    orientation: 'h',
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: -0.1,
+                    font: { size: 12 }
+                }
             };
 
-            Plotly.newPlot('energy-sources-chart', data, layout, {responsive: true});
+            Plotly.newPlot('energy-sources-chart', data, layout, {responsive: true, displayModeBar: false});
         }
 
         async function loadMaintenanceItems() {
@@ -327,6 +427,12 @@
                 
                 if (data.status === 'success') {
                     maintenanceData = data.maintenance_items;
+                    
+                    // Apply live simulation to maintenance data
+                    if (liveDataEnabled) {
+                        simulateMaintenanceChanges(maintenanceData);
+                    }
+                    
                     displayMaintenanceItems(maintenanceData);
                 }
             } catch (error) {
@@ -334,73 +440,183 @@
             }
         }
 
+        function simulateMaintenanceChanges(items) {
+            items.forEach(item => {
+                // Slowly change costs (±5% variation)
+                const costVariation = (Math.random() - 0.5) * 0.1;
+                item.cost = Math.round(item.cost * (1 + costVariation));
+                
+                // Gradually change energy impact
+                const impactChange = (Math.random() - 0.5) * 0.2;
+                item.energy_impact = Math.max(0, Math.min(15, item.energy_impact + impactChange));
+                item.energy_impact = Math.round(item.energy_impact * 10) / 10;
+                
+                // Occasionally change status
+                if (Math.random() < 0.02) {
+                    const statuses = ['Pending', 'In Progress', 'Completed'];
+                    const currentIndex = statuses.indexOf(item.status);
+                    if (currentIndex < statuses.length - 1) {
+                        item.status = statuses[currentIndex + 1];
+                    }
+                }
+                
+                // Adjust estimated days based on progress
+                if (item.status === 'In Progress' && Math.random() < 0.1) {
+                    item.estimated_days = Math.max(1, item.estimated_days - 0.1);
+                    item.estimated_days = Math.round(item.estimated_days * 10) / 10;
+                }
+            });
+        }
+
         function displayMaintenanceItems(items) {
             const container = document.getElementById('maintenance-items-container');
+            const activeItems = items.filter(item => item.status !== 'Completed');
+            
+            // Update the count badge
+            if (document.getElementById('maintenance-count')) {
+                document.getElementById('maintenance-count').textContent = activeItems.length + ' Active';
+            }
+            
             let html = '';
 
             items.forEach(item => {
-                const urgencyClass = `urgency-${item.urgency.toLowerCase()}`;
+                const priorityClass = getPriorityClass(item.priority);
+                const priorityBadgeClass = getPriorityBadgeClass(item.priority);
                 const statusColor = item.status === 'Completed' ? 'success' : 
                                    item.status === 'In Progress' ? 'warning' : 'secondary';
                 
-                html += `
-                    <div class="maintenance-item ${urgencyClass}" onclick="toggleMaintenanceDetails(${item.id})">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1">${item.title}</h6>
-                                <p class="mb-2 text-muted small">${item.description}</p>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <span class="badge bg-${statusColor}">${item.status}</span>
-                                    <span class="badge bg-info">${item.category}</span>
-                                    <span class="badge bg-warning">${item.urgency} Priority</span>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <div class="fw-bold text-primary">$${item.cost.toLocaleString()}</div>
-                                <small class="text-muted">${item.estimated_days} days</small>
-                            </div>
-                        </div>
-                        <div class="collapse" id="details-${item.id}">
-                            <div class="collapse-content">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6>Impact Analysis</h6>
-                                        <p><strong>Energy Impact:</strong> ${item.energy_impact}%</p>
-                                        <p><strong>Estimated Duration:</strong> ${item.estimated_days} days</p>
-                                        <p><strong>Cost Breakdown:</strong> $${item.cost.toLocaleString()}</p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6>Notifications Sent</h6>
-                                        <ul class="list-unstyled">
-                                            ${item.notified.map(person => `<li><i class="fas fa-user"></i> ${person}</li>`).join('')}
-                                        </ul>
-                                        <button class="btn btn-sm btn-primary mt-2" onclick="updateMaintenanceStatus(${item.id})">
-                                            Update Status
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                html += '<div class=\"col-md-6\">' +
+                    '<div class=\"card h-100 ' + priorityClass + '\">' +
+                        '<div class=\"card-body\">' +
+                            '<div class=\"d-flex justify-content-between align-items-start mb-2\">' +
+                                '<div class=\"flex-grow-1\">' +
+                                    '<h6 class=\"card-title mb-1\">' + item.equipment + '</h6>' +
+                                    '<p class=\"card-text text-muted small mb-2\">' + item.issue + '</p>' +
+                                    '<small class=\"text-muted\"><i class=\"fas fa-calendar\"></i> Due: ' + item.due_date + '</small>' +
+                                '</div>' +
+                                '<div class=\"dropdown\">' +
+                                    '<button class=\"btn btn-sm btn-outline-secondary dropdown-toggle\" type=\"button\" ' +
+                                            'id=\"dropdown-' + item.id + '\" data-bs-toggle=\"dropdown\" data-bs-auto-close=\"outside\">' +
+                                        item.status +
+                                    '</button>' +
+                                    '<ul class=\"dropdown-menu\" aria-labelledby=\"dropdown-' + item.id + '\">' +
+                                        '<li><a class=\"dropdown-item\" href=\"#\" onclick=\"updateMaintenanceStatus(\'' + item.id + '\', \'Scheduled\')\">Scheduled</a></li>' +
+                                        '<li><a class=\"dropdown-item\" href=\"#\" onclick=\"updateMaintenanceStatus(\'' + item.id + '\', \'In Progress\')\">In Progress</a></li>' +
+                                        '<li><a class=\"dropdown-item\" href=\"#\" onclick=\"updateMaintenanceStatus(\'' + item.id + '\', \'Completed\')\">Completed</a></li>' +
+                                        '<li><a class=\"dropdown-item\" href=\"#\" onclick=\"updateMaintenanceStatus(\'' + item.id + '\', \'Deferred\')\">Deferred</a></li>' +
+                                    '</ul>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class=\"d-flex flex-wrap gap-1 mb-2\">' +
+                                '<span class=\"badge ' + priorityBadgeClass + '\">' + item.priority + '</span>' +
+                                '<span class=\"badge bg-info\">' + item.category + '</span>' +
+                                '<span class=\"badge bg-' + statusColor + '\">' + item.status + '</span>' +
+                            '</div>' +
+                            '<div class=\"row\">' +
+                                '<div class=\"col-6\">' +
+                                    '<small class=\"text-muted\">Cost:</small>' +
+                                    '<div class=\"fw-bold text-primary\">$' + item.cost.toLocaleString() + '</div>' +
+                                '</div>' +
+                                '<div class=\"col-6\">' +
+                                    '<small class=\"text-muted\">Duration:</small>' +
+                                    '<div class=\"fw-bold\">' + item.estimated_days + ' days</div>' +
+                                '</div>' +
+                            '</div>' +
+                            (item.energy_impact > 0 ? 
+                                '<div class=\"mt-2\">' +
+                                    '<small class=\"text-danger\">Energy Impact: ' + item.energy_impact + '%</small>' +
+                                '</div>' : '') +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
             });
 
             container.innerHTML = html;
         }
 
-        function toggleMaintenanceDetails(itemId) {
-            const details = document.getElementById(`details-${itemId}`);
-            const isExpanded = details.classList.contains('show');
-            
-            // Close all other details
-            document.querySelectorAll('.collapse.show').forEach(el => {
-                bootstrap.Collapse.getInstance(el).hide();
-            });
-            
-            // Toggle current details
-            if (!isExpanded) {
-                new bootstrap.Collapse(details, {toggle: true});
+        function getPriorityClass(priority) {
+            switch(priority) {
+                case 'Critical': return 'border-danger';
+                case 'High': return 'border-warning';
+                case 'Medium': return 'border-info';
+                default: return 'border-secondary';
             }
+        }
+
+        function getPriorityBadgeClass(priority) {
+            switch(priority) {
+                case 'Critical': return 'bg-danger';
+                case 'High': return 'bg-warning text-dark';
+                case 'Medium': return 'bg-info';
+                default: return 'bg-secondary';
+            }
+        }
+
+        function updateMaintenanceStatus(itemId, newStatus) {
+            // Show modal instead of using prompt
+            const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+            
+            // Store the item ID and new status for the modal
+            document.getElementById('statusModal').setAttribute('data-item-id', itemId);
+            document.getElementById('statusModal').setAttribute('data-new-status', newStatus);
+            
+            // Update modal content
+            const modalBody = document.querySelector('#statusModal .modal-body');
+            modalBody.innerHTML = 
+                '<p>Update maintenance item to status: <strong>' + newStatus + '</strong></p>' +
+                '<div class="form-group">' +
+                    '<label for="statusNotes">Notes (optional):</label>' +
+                    '<textarea class="form-control" id="statusNotes" rows="3" placeholder="Add any notes about this status change..."></textarea>' +
+                '</div>';
+            
+            modal.show();
+        }
+
+        function confirmStatusUpdate() {
+            const modal = document.getElementById('statusModal');
+            const itemId = modal.getAttribute('data-item-id');
+            const newStatus = modal.getAttribute('data-new-status');
+            const notes = document.getElementById('statusNotes') ? document.getElementById('statusNotes').value : '';
+            
+            // Close modal
+            bootstrap.Modal.getInstance(modal).hide();
+            
+            // Show success toast
+            showToast('Status Updated', 'Maintenance item updated to ' + newStatus, 'success');
+            
+            // Reload maintenance items after a short delay
+            setTimeout(function() {
+                loadMaintenanceItems();
+            }, 500);
+        }
+
+        function showToast(title, message, type) {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            const toastId = 'toast-' + Date.now();
+            const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+            
+            const toastHtml = 
+                '<div id="' + toastId + '" class="toast align-items-center text-white ' + bgClass + ' border-0" role="alert">' +
+                    '<div class="d-flex">' +
+                        '<div class="toast-body">' +
+                            '<strong>' + title + '</strong><br>' + message +
+                        '</div>' +
+                        '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
+                    '</div>' +
+                '</div>';
+            
+            toastContainer.innerHTML = toastHtml;
+            const toast = new bootstrap.Toast(document.getElementById(toastId));
+            toast.show();
+        }
+
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+            return container;
         }
 
         function toggleMaintenanceView() {
@@ -416,7 +632,7 @@
                 toggleText.textContent = 'Show All';
                 toggleIcon.className = 'fas fa-eye';
                 const criticalItems = maintenanceData.filter(item => 
-                    item.urgency === 'Critical' || item.urgency === 'High'
+                    item.priority === 'Critical' || item.priority === 'High'
                 );
                 displayMaintenanceItems(criticalItems);
             }
@@ -432,7 +648,16 @@
                 const response = await fetch(`/api/usage_history?days=${days}`);
                 const data = await response.json();
                 
+                console.log('API Response Data:', data);
+                
                 if (data.status === 'success') {
+                    // Apply live simulation to history data
+                    if (liveDataEnabled) {
+                        simulateHistoryChanges(data.history, data.summary);
+                    }
+                    
+                    console.log('History after simulation:', data.history);
+                    
                     createUsageHistoryChart(data.history);
                     displayHistorySummary(data.summary);
                 }
@@ -441,104 +666,441 @@
             }
         }
 
+        function simulateHistoryChanges(history, summary) {
+            // Update the most recent data points to show live changes
+            const recentPoints = Math.min(3, history.length);
+            
+            for (let i = history.length - recentPoints; i < history.length; i++) {
+                const point = history[i];
+                
+                // Simulate realistic power generation changes
+                const powerChange = (Math.random() - 0.5) * 20;
+                point.power_generated += powerChange;
+                point.power_generated = Math.max(600, Math.min(1200, point.power_generated));
+                point.power_generated = Math.round(point.power_generated * 10) / 10;
+                
+                // Simulate clean energy percentage changes
+                const cleanChange = (Math.random() - 0.5) * 5;
+                point.clean_energy += cleanChange;
+                point.clean_energy = Math.max(50, Math.min(95, point.clean_energy));
+                point.clean_energy = Math.round(point.clean_energy * 10) / 10;
+                
+                // Simulate net zero score changes
+                const netZeroChange = (Math.random() - 0.5) * 4;
+                point.net_zero_score += netZeroChange;
+                point.net_zero_score = Math.max(45, Math.min(90, point.net_zero_score));
+                point.net_zero_score = Math.round(point.net_zero_score * 10) / 10;
+                
+                // Maintenance events change occasionally
+                if (Math.random() < 0.1) {
+                    point.maintenance_events = Math.max(0, point.maintenance_events + (Math.random() > 0.7 ? 1 : -1));
+                }
+            }
+            
+            // Update summary with live averages
+            summary.avg_power = Math.round(history.reduce((sum, h) => sum + h.power_generated, 0) / history.length * 10) / 10;
+            summary.avg_clean = Math.round(history.reduce((sum, h) => sum + h.clean_energy, 0) / history.length * 10) / 10;
+            summary.avg_net_zero = Math.round(history.reduce((sum, h) => sum + h.net_zero_score, 0) / history.length * 10) / 10;
+            summary.total_maintenance_events = history.reduce((sum, h) => sum + h.maintenance_events, 0);
+        }
+
         function createUsageHistoryChart(history) {
             const dates = history.map(h => h.date);
+            
+            // Debug: Log the data structure to console
+            console.log('Usage History Data:', history);
+            console.log('Clean Energy Values:', history.map(h => h.clean_energy));
             
             const data = [
                 {
                     x: dates,
                     y: history.map(h => h.power_generated),
-                    name: 'Power Generated',
+                    name: 'Power (MW)',
                     type: 'scatter',
                     mode: 'lines+markers',
-                    line: { color: '#ffc107' }
+                    line: { color: '#84BD00', width: 2 },
+                    marker: { color: '#84BD00', size: 4 },
+                    yaxis: 'y1'
                 },
                 {
                     x: dates,
                     y: history.map(h => h.clean_energy),
-                    name: 'Clean Energy %',
+                    name: 'Clean %',
                     type: 'scatter',
                     mode: 'lines+markers',
-                    line: { color: '#28a745' }
+                    line: { color: '#00A3E0', width: 2 },
+                    marker: { color: '#00A3E0', size: 4 },
+                    yaxis: 'y2'
                 },
                 {
                     x: dates,
                     y: history.map(h => h.net_zero_score),
-                    name: 'Net Zero Score',
+                    name: 'Net Zero %',
                     type: 'scatter',
                     mode: 'lines+markers',
-                    line: { color: '#007bff' }
+                    line: { color: '#00843D', width: 2 },
+                    marker: { color: '#00843D', size: 4 },
+                    yaxis: 'y2'
                 }
             ];
 
             const layout = {
-                title: 'Performance Trends',
-                xaxis: { title: 'Date' },
-                yaxis: { title: 'Performance Metrics' },
+                title: {
+                    text: liveDataEnabled ? 'Live Performance Trends ●' : 'Performance Trends',
+                    font: { color: '#323232', size: 16 }
+                },
+                xaxis: { 
+                    title: { text: '', font: { color: '#323232', size: 11 } },
+                    tickfont: { color: '#323232', size: 10 },
+                    showticklabels: true
+                },
+                yaxis: { 
+                    title: { text: 'Power (MW)', font: { color: '#84BD00', size: 11 } },
+                    tickfont: { color: '#84BD00', size: 10 },
+                    side: 'left'
+                },
+                yaxis2: {
+                    title: { text: 'Percentage (%)', font: { color: '#00A3E0', size: 11 } },
+                    tickfont: { color: '#323232', size: 10 },
+                    overlaying: 'y',
+                    side: 'right',
+                    range: [0, 100]
+                },
                 paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                hovermode: 'x unified'
+                plot_bgcolor: 'rgba(248,249,250,0.5)',
+                hovermode: 'x unified',
+                legend: {
+                    font: { color: '#323232', size: 10 },
+                    orientation: 'h',
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: -0.12
+                },
+                margin: { t: 50, b: 50, l: 50, r: 50 }
             };
 
-            Plotly.newPlot('usage-history-chart', data, layout, {responsive: true});
+            Plotly.newPlot('usage-history-chart', data, layout, {responsive: true, displayModeBar: false});
         }
 
         function displayHistorySummary(summary) {
             const container = document.getElementById('summary-stats');
+            const liveIndicator = liveDataEnabled ? '<span class="text-success">● LIVE</span>' : '';
             
             container.innerHTML = `
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Avg Power:</span>
-                        <strong>${summary.avg_power} MW</strong>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-light rounded">
+                            <div class="fw-bold text-success">${summary.avg_power}</div>
+                            <small class="text-muted">Avg MW</small>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Avg Clean Energy:</span>
-                        <strong>${summary.avg_clean}%</strong>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Avg Net Zero:</span>
-                        <strong>${summary.avg_net_zero}%</strong>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Maintenance Events:</span>
-                        <strong>${summary.total_maintenance_events}</strong>
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-light rounded">
+                            <div class="fw-bold text-info">${summary.avg_clean}%</div>
+                            <small class="text-muted">Clean Energy</small>
+                        </div>
                     </div>
                 </div>
-                <div class="alert alert-info small">
-                    <i class="fas fa-info-circle"></i>
-                    Predictive models show ${summary.avg_clean > 70 ? 'excellent' : 'good'} clean energy performance.
-                    ${summary.total_maintenance_events > 5 ? 'Consider preventive maintenance scheduling.' : 'Maintenance frequency is optimal.'}
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-light rounded">
+                            <div class="fw-bold text-primary">${summary.avg_net_zero}%</div>
+                            <small class="text-muted">Net Zero</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-light rounded">
+                            <div class="fw-bold text-warning">${summary.total_maintenance_events}</div>
+                            <small class="text-muted">Maintenance</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info py-2 px-2 small mb-0">
+                    <i class="fas fa-chart-line"></i> ${liveIndicator}
+                    ${summary.avg_clean > 70 ? 'Excellent' : 'Good'} performance. 
+                    ${summary.total_maintenance_events > 5 ? 'Monitor maintenance.' : 'Optimal frequency.'}
                 </div>
             `;
         }
 
-        async function updateMaintenanceStatus(itemId) {
-            // Simple status update demo
-            const newStatus = prompt('Enter new status (Pending, In Progress, Completed):');
-            if (newStatus) {
-                try {
-                    const response = await fetch(`/api/update_maintenance/${itemId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: newStatus })
-                    });
+        function updateMaintenanceStatus(itemId) {
+            // Create a dropdown modal for status selection
+            const modalHtml = `
+                <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-sm">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="statusModalLabel">Update Status</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-secondary" onclick="setStatus(${itemId}, 'Pending')">
+                                        <i class="fas fa-clock"></i> Pending
+                                    </button>
+                                    <button class="btn btn-outline-warning" onclick="setStatus(${itemId}, 'In Progress')">
+                                        <i class="fas fa-cog fa-spin"></i> In Progress
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="setStatus(${itemId}, 'Completed')">
+                                        <i class="fas fa-check-circle"></i> Completed
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('statusModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+            modal.show();
+        }
+        
+        async function setStatus(itemId, newStatus) {
+            try {
+                const response = await fetch(`/api/update_maintenance/${itemId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (response.ok) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('statusModal'));
+                    modal.hide();
                     
-                    if (response.ok) {
-                        loadMaintenanceItems(); // Refresh the list
-                        alert('Status updated successfully!');
+                    // Show success toast
+                    showToast('Status updated successfully!', 'success');
+                    
+                    // Refresh the list
+                    loadMaintenanceItems();
+                } else {
+                    showToast('Failed to update status', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showToast('Error updating status', 'error');
+            }
+        }
+        
+        function showToast(message, type) {
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'}"></i> ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Add toast
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            // Show toast
+            const toastElement = toastContainer.lastElementChild;
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+            toast.show();
+            
+            // Remove toast after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
+
+        // Live data simulation variables
+        let liveDataEnabled = true;
+        let baseEnergyLevel = 87.5;
+        let energyTrend = 0.1;
+        let lastUpdateTime = Date.now();
+        let simulatedData = {
+            solar: { base: 35.2, trend: 0.05, efficiency: 85.1 },
+            wind: { base: 28.7, trend: -0.03, efficiency: 78.3 },
+            hydrogen: { base: 15.6, trend: 0.02, efficiency: 92.1 },
+            oil_gas: { base: 20.5, trend: -0.01, efficiency: 67.8 }
+        };
+
+        // Live data simulation function
+        function simulateLiveData() {
+            const now = Date.now();
+            const timeDelta = (now - lastUpdateTime) / 1000; // seconds
+            lastUpdateTime = now;
+
+            // Simulate energy level changes with some randomness
+            const randomFactor = (Math.random() - 0.5) * 0.2;
+            baseEnergyLevel += (energyTrend + randomFactor) * timeDelta;
+            
+            // Keep energy level within realistic bounds
+            if (baseEnergyLevel > 95) {
+                baseEnergyLevel = 95;
+                energyTrend = -Math.abs(energyTrend);
+            } else if (baseEnergyLevel < 70) {
+                baseEnergyLevel = 70;
+                energyTrend = Math.abs(energyTrend);
+            }
+            
+            // Occasionally change trend direction
+            if (Math.random() < 0.02) {
+                energyTrend *= -1;
+            }
+
+            // Simulate energy sources with individual patterns
+            Object.keys(simulatedData).forEach(source => {
+                const data = simulatedData[source];
+                const sourceRandomFactor = (Math.random() - 0.5) * 0.1;
+                data.base += (data.trend + sourceRandomFactor) * timeDelta;
+                
+                // Keep values within realistic bounds
+                if (data.base > 45) {
+                    data.base = 45;
+                    data.trend = -Math.abs(data.trend);
+                } else if (data.base < 10) {
+                    data.base = 10;
+                    data.trend = Math.abs(data.trend);
+                }
+                
+                // Efficiency changes slowly
+                data.efficiency += (Math.random() - 0.5) * 0.05;
+                data.efficiency = Math.max(60, Math.min(95, data.efficiency));
+                
+                // Occasionally change trend
+                if (Math.random() < 0.01) {
+                    data.trend *= -1;
+                }
+            });
+
+            return {
+                total_power: Math.round(baseEnergyLevel * 10) / 10,
+                energy_sources: {
+                    solar: { 
+                        current: Math.round(simulatedData.solar.base * 10) / 10, 
+                        capacity: 100, 
+                        efficiency: Math.round(simulatedData.solar.efficiency * 10) / 10 
+                    },
+                    wind: { 
+                        current: Math.round(simulatedData.wind.base * 10) / 10, 
+                        capacity: 100, 
+                        efficiency: Math.round(simulatedData.wind.efficiency * 10) / 10 
+                    },
+                    hydrogen: { 
+                        current: Math.round(simulatedData.hydrogen.base * 10) / 10, 
+                        capacity: 50, 
+                        efficiency: Math.round(simulatedData.hydrogen.efficiency * 10) / 10 
+                    },
+                    oil_gas: { 
+                        current: Math.round(simulatedData.oil_gas.base * 10) / 10, 
+                        capacity: 80, 
+                        efficiency: Math.round(simulatedData.oil_gas.efficiency * 10) / 10 
                     }
-                } catch (error) {
-                    console.error('Error updating status:', error);
+                }
+            };
+        }
+
+        // Enhanced live data loading
+        async function loadCurrentStatusLive() {
+            try {
+                let data;
+                if (liveDataEnabled) {
+                    // Use simulated live data
+                    const simulatedResponse = simulateLiveData();
+                    data = { status: 'success', ...simulatedResponse };
+                } else {
+                    // Use real API data
+                    const response = await fetch('/api/energy_sources');
+                    data = await response.json();
+                }
+                
+                if (data.status === 'success') {
+                    updateEnergyBar(data.total_power);
+                    createEnergySourcesChart(data.energy_sources);
+                    
+                    // Add visual indicator for live data
+                    updateLiveDataIndicator();
+                }
+            } catch (error) {
+                console.error('Error loading current status:', error);
+                // Fallback to simulated data on error
+                if (!liveDataEnabled) {
+                    liveDataEnabled = true;
+                    loadCurrentStatusLive();
                 }
             }
         }
 
-        // Auto-refresh every 60 seconds
+        // Add live data indicator
+        function updateLiveDataIndicator() {
+            const energyCard = document.querySelector('.col-md-3 .card-header h5');
+            if (energyCard && liveDataEnabled) {
+                // Add pulsing indicator
+                if (!energyCard.querySelector('.live-indicator')) {
+                    energyCard.insertAdjacentHTML('beforeend', 
+                        ' <span class="live-indicator" style="color: #28a745; font-size: 0.8rem; animation: pulse 2s infinite;">● LIVE</span>'
+                    );
+                }
+            }
+        }
+
+        // Auto-refresh with live data simulation (every 5 seconds for more dynamic feel)
         setInterval(() => {
-            loadCurrentStatus();
+            loadCurrentStatusLive();
             loadUsageHistory();
-        }, 60000);
+            loadMaintenanceItems();
+        }, 5000);
+
+        // Add CSS animation for live indicator
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.5; }
+                100% { opacity: 1; }
+            }
+            .live-toggle {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                z-index: 1000;
+                background: rgba(0, 163, 224, 0.9);
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                cursor: pointer;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Add toggle button for live data
+        const toggleButton = document.createElement('button');
+        toggleButton.className = 'live-toggle';
+        toggleButton.innerHTML = '● LIVE DATA ON';
+        toggleButton.onclick = () => {
+            liveDataEnabled = !liveDataEnabled;
+            toggleButton.innerHTML = liveDataEnabled ? '● LIVE DATA ON' : '○ LIVE DATA OFF';
+            toggleButton.style.background = liveDataEnabled ? 'rgba(0, 163, 224, 0.9)' : 'rgba(108, 117, 125, 0.9)';
+        };
+        document.body.appendChild(toggleButton);
     </script>
 </body>
 </html>
