@@ -359,6 +359,7 @@
                     loadHealthDistribution();
                     loadMaintenanceSchedule();
                     loadFeatureImportance();
+                    loadCriticalMaintenance();
                 } else {
                     alert('Error loading data: ' + data.message);
                 }
@@ -390,9 +391,25 @@
                 }));
                 
                 Plotly.newPlot('flow-speed-chart', flowData, {
-                    title: 'Average Flow Velocities',
-                    xaxis: { title: 'Meter' },
-                    yaxis: { title: 'Flow Velocity (m/s)' }
+                    title: {
+                        text: 'Average Flow Velocities',
+                        font: { size: 18, family: 'Arial, sans-serif', weight: 'bold' }
+                    },
+                    xaxis: { 
+                        title: {
+                            text: 'Meter',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        tickfont: { size: 14, weight: 'bold' }
+                    },
+                    yaxis: { 
+                        title: {
+                            text: 'Flow Velocity (m/s)',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        tickfont: { size: 14, weight: 'bold' }
+                    },
+                    font: { size: 14, weight: 'bold' }
                 });
 
                 // Sound Speed Chart
@@ -404,9 +421,25 @@
                 }));
                 
                 Plotly.newPlot('sound-speed-chart', soundData, {
-                    title: 'Average Sound Speeds',
-                    xaxis: { title: 'Meter' },
-                    yaxis: { title: 'Sound Speed (m/s)' }
+                    title: {
+                        text: 'Average Sound Speeds',
+                        font: { size: 18, family: 'Arial, sans-serif', weight: 'bold' }
+                    },
+                    xaxis: { 
+                        title: {
+                            text: 'Meter',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        tickfont: { size: 14, weight: 'bold' }
+                    },
+                    yaxis: { 
+                        title: {
+                            text: 'Sound Speed (m/s)',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        tickfont: { size: 14, weight: 'bold' }
+                    },
+                    font: { size: 14, weight: 'bold' }
                 });
 
                 // Processing Recommendations
@@ -457,9 +490,26 @@
                     }];
                     
                     Plotly.newPlot('maintenance-timeline', timelineData, {
-                        title: `Meter ${meterId} - Predicted Health Progression`,
-                        xaxis: { title: 'Date' },
-                        yaxis: { title: 'Health State', range: [0.5, 4.5] }
+                        title: {
+                            text: `Meter ${meterId} - Predicted Health Progression`,
+                            font: { size: 18, family: 'Arial, sans-serif', weight: 'bold' }
+                        },
+                        xaxis: { 
+                            title: {
+                                text: 'Date',
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            tickfont: { size: 12, weight: 'bold' }
+                        },
+                        yaxis: { 
+                            title: {
+                                text: 'Health State',
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            range: [0.5, 4.5],
+                            tickfont: { size: 12, weight: 'bold' }
+                        },
+                        font: { size: 12, weight: 'bold' }
                     });
 
                     // Maintenance Events
@@ -517,8 +567,12 @@
                     }));
 
                     Plotly.newPlot('health-distribution-chart', chartData, {
-                        title: 'Health State Distributions Across All Meters',
-                        grid: { rows: 2, columns: 2 }
+                        title: {
+                            text: 'Health State Distributions Across All Meters',
+                            font: { size: 18, family: 'Arial, sans-serif', weight: 'bold' }
+                        },
+                        grid: { rows: 2, columns: 2 },
+                        font: { size: 14, weight: 'bold' }
                     });
                 }
             } catch (error) {
@@ -545,10 +599,26 @@
                     }];
                     
                     Plotly.newPlot('feature-importance-chart', chartData, {
-                        title: `Top Features - Meter ${meterId}`,
-                        xaxis: { title: 'Importance Score' },
-                        yaxis: { title: 'Features' },
-                        height: 400
+                        title: {
+                            text: `Top Features - Meter ${meterId}`,
+                            font: { size: 18, family: 'Arial, sans-serif', weight: 'bold' }
+                        },
+                        xaxis: { 
+                            title: {
+                                text: 'Importance Score',
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            tickfont: { size: 14, weight: 'bold' }
+                        },
+                        yaxis: { 
+                            title: {
+                                text: 'Features',
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            tickfont: { size: 14, weight: 'bold' }
+                        },
+                        height: 400,
+                        font: { size: 14, weight: 'bold' }
                     });
                 }
             } catch (error) {
@@ -626,6 +696,76 @@
             } catch (error) {
                 document.getElementById('prediction-result').innerHTML = 
                     `<div class="alert alert-danger">Error making prediction: ${error.message}</div>`;
+            }
+        }
+
+        // Load critical maintenance items from current status maintenance management
+        async function loadCriticalMaintenance() {
+            try {
+                const response = await fetch('/api/maintenance_data');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const criticalItems = data.data.filter(item => 
+                        (item.priority === 'Critical' || item.priority === 'High') && 
+                        item.status !== 'Completed'
+                    );
+                    
+                    let criticalHtml = '';
+                    
+                    if (criticalItems.length === 0) {
+                        criticalHtml = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> No critical maintenance items at this time.</div>';
+                    } else {
+                        criticalItems.forEach(item => {
+                            const priorityBadgeClass = item.priority === 'Critical' ? 'bg-danger' : 'bg-warning text-dark';
+                            const statusColor = item.status === 'In Progress' ? 'warning' : 'secondary';
+                            
+                            criticalHtml += `
+                                <div class="alert alert-${item.priority === 'Critical' ? 'danger' : 'warning'} border-start border-4 border-${item.priority === 'Critical' ? 'danger' : 'warning'} mb-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="alert-heading mb-2">
+                                                <i class="fas fa-tools"></i> ${item.equipment}
+                                                <span class="badge ${priorityBadgeClass} ms-2">${item.priority}</span>
+                                                <span class="badge bg-info ms-1">${item.category}</span>
+                                            </h6>
+                                            <p class="mb-2"><strong>Issue:</strong> ${item.issue}</p>
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <small class="text-muted">Due Date:</small><br>
+                                                    <strong>${item.due_date}</strong>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <small class="text-muted">Energy Impact:</small><br>
+                                                    <strong class="text-danger">${item.energy_impact}%</strong>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <small class="text-muted">Status:</small><br>
+                                                    <span class="badge bg-${statusColor}">${item.status}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="h4 mb-0 text-${item.priority === 'Critical' ? 'danger' : 'warning'}">
+                                                -${item.energy_impact}%
+                                            </div>
+                                            <small class="text-muted">Performance Impact</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    document.getElementById('critical-maintenance-items').innerHTML = criticalHtml;
+                } else {
+                    document.getElementById('critical-maintenance-items').innerHTML = 
+                        '<div class="alert alert-warning">Unable to load critical maintenance items.</div>';
+                }
+            } catch (error) {
+                console.error('Error loading critical maintenance:', error);
+                document.getElementById('critical-maintenance-items').innerHTML = 
+                    '<div class="alert alert-danger">Error loading critical maintenance items.</div>';
             }
         }
     </script>

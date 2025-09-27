@@ -354,8 +354,8 @@
                     createCleanChart(data.clean_percentage);
                     createNetZeroChart(data.net_zero_percentage);
                     
-                    // Display maintenance items
-                    displayMaintenanceItems(data.critical_maintenance);
+                    // Display maintenance items from current status maintenance management
+                    await loadCriticalMaintenanceItems();
                     console.log('Home data loaded successfully');
                 } else {
                     console.warn('API returned error status:', data.message);
@@ -482,8 +482,8 @@
                 showlegend: false,
                 margin: { t: 20, b: 20, l: 20, r: 20 },
                 annotations: [{
-                    text: percentage + '%<br><span style="font-size:12px;">Power</span>',
-                    font: { size: 18, color: '#495057' },
+                    text: percentage + '%<br><span style="font-size:16px; font-weight:bold;">Power</span>',
+                    font: { size: 28, color: '#495057', weight: 'bold', family: 'Arial Black, sans-serif' },
                     showarrow: false,
                     x: 0.5,
                     y: 0.5
@@ -512,8 +512,8 @@
                 showlegend: false,
                 margin: { t: 20, b: 20, l: 20, r: 20 },
                 annotations: [{
-                    text: percentage + '%<br><span style="font-size:12px;">Clean</span>',
-                    font: { size: 18, color: '#495057' },
+                    text: percentage + '%<br><span style="font-size:16px; font-weight:bold;">Clean</span>',
+                    font: { size: 28, color: '#495057', weight: 'bold', family: 'Arial Black, sans-serif' },
                     showarrow: false,
                     x: 0.5,
                     y: 0.5
@@ -542,8 +542,8 @@
                 showlegend: false,
                 margin: { t: 20, b: 20, l: 20, r: 20 },
                 annotations: [{
-                    text: percentage + '%<br><span style="font-size:12px;">Net Zero</span>',
-                    font: { size: 18, color: '#495057' },
+                    text: percentage + '%<br><span style="font-size:16px; font-weight:bold;">Net Zero</span>',
+                    font: { size: 28, color: '#495057', weight: 'bold', family: 'Arial Black, sans-serif' },
                     showarrow: false,
                     x: 0.5,
                     y: 0.5
@@ -576,6 +576,8 @@
                                    item.priority === 'High' ? 'exclamation-circle' : 
                                    item.priority === 'Medium' ? 'exclamation' : 'info-circle';
                 
+                const performanceImpact = getPerformanceImpact(item.priority, item.id);
+                
                 html += `
                     <div class="col-md-6 mb-3">
                         <div class="maintenance-item ${priorityClass}">
@@ -585,15 +587,28 @@
                                         <i class="fas fa-${priorityIcon}"></i> ${item.equipment}
                                     </h6>
                                     <p class="mb-2 text-muted small">${item.issue}</p>
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <span class="badge bg-${getPriorityBadgeClass(item.priority)}">${item.priority}</span>
+                                    <div class="d-flex gap-2 flex-wrap mb-2">
+                                        <span class="badge bg-danger">${item.priority}</span>
                                         <span class="badge bg-info">${item.category}</span>
                                         <span class="badge bg-secondary">${item.status}</span>
                                     </div>
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <div class="text-warning fw-bold">${item.estimated_days} days</div>
+                                            <small class="text-muted">Time to Fix</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-danger fw-bold">-${performanceImpact}%</div>
+                                            <small class="text-muted">Performance Drop</small>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="text-end">
-                                    <div class="fw-bold text-danger">$${item.cost.toLocaleString()}</div>
-                                    <small class="text-muted">${item.due_date}</small>
+                                    <div class="h4 mb-0 text-danger">-${performanceImpact}%</div>
+                                    <small class="text-muted">Impact</small>
+                                    <div class="mt-1">
+                                        <small class="text-muted">${item.due_date}</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -611,6 +626,55 @@
                 case 'Medium': return 'info';
                 default: return 'secondary';
             }
+        }
+
+        // Load critical maintenance items from current status maintenance management
+        async function loadCriticalMaintenanceItems() {
+            try {
+                const response = await fetch('/api/maintenance_items?category=all');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Filter for only Critical priority items that aren't completed
+                    const criticalItems = data.maintenance_items.filter(item => 
+                        item.priority === 'Critical' && 
+                        item.status !== 'Completed'
+                    );
+                    
+                    // Sort by performance impact (highest first)
+                    criticalItems.sort((a, b) => {
+                        const aImpact = getPerformanceImpact(a.priority, a.id);
+                        const bImpact = getPerformanceImpact(b.priority, b.id);
+                        return bImpact - aImpact; // Descending order (highest impact first)
+                    });
+                    
+                    displayMaintenanceItems(criticalItems);
+                } else {
+                    document.getElementById('maintenance-items').innerHTML = 
+                        '<div class="col-12"><div class="alert alert-warning">Unable to load critical maintenance items.</div></div>';
+                }
+            } catch (error) {
+                console.error('Error loading critical maintenance:', error);
+                document.getElementById('maintenance-items').innerHTML = 
+                    '<div class="col-12"><div class="alert alert-danger">Error loading maintenance data<br><small>' + error.message + '</small></div></div>';
+            }
+        }
+
+        // Get performance impact based on priority and equipment ID
+        function getPerformanceImpact(priority, itemId) {
+            const impactMap = {
+                1: { 'Critical': 22.5, 'High': 16.8, 'Medium': 11.2, 'Low': 5.1 },
+                2: { 'Critical': 18.9, 'High': 13.4, 'Medium': 8.7, 'Low': 4.2 },
+                3: { 'Critical': 25.3, 'High': 19.1, 'Medium': 12.6, 'Low': 6.8 },
+                4: { 'Critical': 15.7, 'High': 11.9, 'Medium': 7.3, 'Low': 3.5 },
+                5: { 'Critical': 21.4, 'High': 15.6, 'Medium': 10.1, 'Low': 4.9 },
+                6: { 'Critical': 19.8, 'High': 14.2, 'Medium': 9.4, 'Low': 4.7 },
+                7: { 'Critical': 17.6, 'High': 12.8, 'Medium': 8.1, 'Low': 3.8 },
+                8: { 'Critical': 28.2, 'High': 21.7, 'Medium': 14.3, 'Low': 7.9 }
+            };
+            
+            const itemImpacts = impactMap[itemId];
+            return itemImpacts ? itemImpacts[priority] || 20.0 : 20.0;
         }
 
         // Auto-refresh every 30 seconds

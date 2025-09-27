@@ -6,6 +6,7 @@ Renewable Energy Monitoring with Predictive Analytics
 
 import sys
 import os
+import logging
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'predictive-maintenance'))
 
 from flask import Flask, render_template, request, jsonify
@@ -24,6 +25,12 @@ from datetime import datetime, timedelta
 import random
 
 app = Flask(__name__)
+
+# Disable Flask's default request logging for cleaner output
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+app.logger.disabled = True
+log.disabled = True
 
 class EnergyManagementSystem:
     def __init__(self):
