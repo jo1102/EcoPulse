@@ -207,7 +207,7 @@ class EnergyManagementSystem:
         self.generate_usage_history()
     
     def _create_maintenance_item(self, item_id, system_info, meter_ref, avg_health, health_trend, sensor_data):
-        """Helper method to create a maintenance item"""
+        """Helper method to create a comprehensive maintenance item with detailed information"""
         
         # Determine priority based on health state
         if avg_health >= 3.5:
@@ -227,22 +227,48 @@ class EnergyManagementSystem:
             cost_multiplier = 0.5
             days_multiplier = 0.5
         
-        # Base costs and timeframes by system type
-        system_configs = {
-            'Solar': {'cost': 15000, 'days': 3},
-            'Wind': {'cost': 25000, 'days': 5},
-            'Hydrogen': {'cost': 18000, 'days': 4},
-            'Oil & Gas': {'cost': 22000, 'days': 6},
-            'Storage': {'cost': 12000, 'days': 2},
-            'Grid': {'cost': 8000, 'days': 1},
-            'HVAC': {'cost': 5000, 'days': 1},
-            'Electrical': {'cost': 7000, 'days': 2}
+        # Static costs by system type and priority (no longer random)
+        static_costs = {
+            'Solar': {
+                'Critical': 28500, 'High': 18200, 'Medium': 12800, 'Low': 7500
+            },
+            'Wind': {
+                'Critical': 45000, 'High': 28750, 'Medium': 19200, 'Low': 12500
+            },
+            'Hydrogen': {
+                'Critical': 35600, 'High': 21800, 'Medium': 15400, 'Low': 9200
+            },
+            'Oil & Gas': {
+                'Critical': 42300, 'High': 26400, 'Medium': 17600, 'Low': 11800
+            },
+            'Storage': {
+                'Critical': 22800, 'High': 14400, 'Medium': 9600, 'Low': 6000
+            },
+            'Grid': {
+                'Critical': 16800, 'High': 9600, 'Medium': 6400, 'Low': 4200
+            },
+            'HVAC': {
+                'Critical': 12500, 'High': 7500, 'Medium': 4800, 'Low': 2500
+            },
+            'Electrical': {
+                'Critical': 15600, 'High': 9200, 'Medium': 5600, 'Low': 3400
+            }
         }
         
-        config = system_configs.get(system_info['type'], {'cost': 10000, 'days': 3})
+        # Base timeframes by system type
+        system_configs = {
+            'Solar': {'days': 3}, 'Wind': {'days': 5}, 'Hydrogen': {'days': 4},
+            'Oil & Gas': {'days': 6}, 'Storage': {'days': 2}, 'Grid': {'days': 1},
+            'HVAC': {'days': 1}, 'Electrical': {'days': 2}
+        }
         
-        # Generate specific maintenance descriptions
-        descriptions = self._generate_maintenance_description(system_info['type'], avg_health, sensor_data)
+        config = system_configs.get(system_info['type'], {'days': 3})
+        cost = static_costs.get(system_info['type'], {}).get(urgency, 10000)
+        
+        # Generate comprehensive maintenance details
+        details = self._generate_comprehensive_maintenance_details(
+            system_info['type'], urgency, avg_health, sensor_data, meter_ref
+        )
         
         # Calculate due date based on urgency
         due_days = np.random.randint(1, int(config['days'] * days_multiplier) + 5)
@@ -251,14 +277,38 @@ class EnergyManagementSystem:
         return {
             'id': item_id,
             'equipment': system_info['name'],
-            'issue': descriptions,
+            'issue': details['primary_issue'],
             'priority': urgency,
-            'cost': int(config['cost'] * cost_multiplier),
+            'cost': cost,  # Static cost
             'due_date': due_date,
             'estimated_days': int(config['days'] * days_multiplier),
             'energy_impact': round((avg_health - 1) * 5, 1),
             'category': system_info['type'],
             'status': self.determine_status(avg_health, health_trend),
+            
+            # Comprehensive details for dropdown
+            'detailed_info': {
+                'root_cause': details['root_cause'],
+                'symptoms': details['symptoms'],
+                'detection_method': details['detection_method'],
+                'maintenance_required': details['maintenance_required'],
+                'parts_needed': details['parts_needed'],
+                'tools_required': details['tools_required'],
+                'safety_precautions': details['safety_precautions'],
+                'estimated_downtime': details['estimated_downtime'],
+                'environmental_impact': details['environmental_impact']
+            },
+            
+            # Contact information
+            'contacts': details['contacts'],
+            
+            # Technical data for graphs
+            'sensor_data': {
+                'health_history': self._generate_health_timeline(avg_health, sensor_data),
+                'detection_location': details['detection_location'],
+                'failure_progression': details['failure_progression']
+            },
+            
             'meter_data': {
                 'meter_id': meter_ref,
                 'health_state': round(avg_health, 2),
@@ -267,70 +317,200 @@ class EnergyManagementSystem:
             }
         }
     
-    def _generate_maintenance_description(self, system_type, health_state, sensor_data):
-        """Generate realistic maintenance descriptions based on system type and health"""
+    def _generate_comprehensive_maintenance_details(self, system_type, priority, health_state, sensor_data, meter_id):
+        """Generate comprehensive maintenance details with root cause analysis"""
         
-        descriptions = {
-            'Solar': [
-                'Panel cleaning and inspection required',
-                'Inverter performance optimization needed',
-                'Wiring connection check and tightening',
-                'Solar panel efficiency degradation detected'
-            ],
-            'Wind': [
-                'Turbine blade balancing and inspection',
-                'Gearbox oil change and lubrication',
-                'Generator bearing replacement needed',
-                'Power curve optimization required'
-            ],
-            'Hydrogen': [
-                'Electrolyzer membrane replacement',
-                'Gas purity testing and calibration',
-                'Pressure vessel safety inspection',
-                'Catalyst regeneration required'
-            ],
-            'Oil & Gas': [
-                'Pipeline pressure testing needed',
-                'Compressor maintenance scheduled',
-                'Safety valve inspection required',
-                'Flow meter calibration needed'
-            ],
-            'Storage': [
-                'Battery cell balancing required',
-                'Thermal management system check',
-                'Power electronics maintenance',
-                'State of health assessment needed'
-            ],
-            'Grid': [
-                'Transformer oil testing required',
-                'Breaker contact inspection needed',
-                'Protection relay calibration',
-                'Power quality monitoring upgrade'
-            ],
-            'HVAC': [
-                'Filter replacement and cleaning',
-                'Refrigerant level check required',
-                'Compressor performance evaluation',
-                'Duct cleaning and maintenance'
-            ],
-            'Electrical': [
-                'Panel board inspection required',
-                'Cable insulation testing needed',
-                'Ground fault testing scheduled',
-                'Load balancing optimization'
-            ]
+        # System-specific maintenance database
+        maintenance_db = {
+            'Solar': {
+                'Critical': {
+                    'primary_issue': 'Critical inverter failure with power output loss',
+                    'root_cause': 'Excessive heat buildup due to cooling fan failure, causing power electronics degradation. UFD sensor detected anomalous thermal patterns and electrical signature changes indicating imminent component failure.',
+                    'symptoms': ['Power output dropped by 35%', 'Inverter temperature >85°C', 'Unusual electrical noise', 'DC/AC conversion efficiency <92%'],
+                    'detection_method': f'UFD Meter {meter_id} ultrasonic flow analysis detected irregular electrical flow patterns and thermal anomalies',
+                    'maintenance_required': [
+                        '1. Complete inverter replacement with upgraded cooling system',
+                        '2. Thermal management system overhaul',
+                        '3. DC combiner box inspection and cleaning',
+                        '4. Power cable integrity testing and replacement if needed',
+                        '5. Grounding system verification and repair'
+                    ],
+                    'parts_needed': [
+                        'String inverter (SMA Sunny Boy 7.7kW) - $2,800',
+                        'DC combiner box with fuses - $450',
+                        'MC4 connectors (20 pcs) - $180',
+                        'Copper grounding wire (50ft) - $95',
+                        'Thermal interface compound - $35'
+                    ],
+                    'contacts': {
+                        'primary': {'name': 'Marcus Chen', 'role': 'Senior Solar Technician', 'phone': '+1-555-0147', 'email': 'marcus.chen@ecopulse.com'},
+                        'backup': {'name': 'Sarah Rodriguez', 'role': 'Solar Systems Engineer', 'phone': '+1-555-0148', 'email': 'sarah.rodriguez@ecopulse.com'},
+                        'supervisor': {'name': 'David Kim', 'role': 'Renewable Energy Manager', 'phone': '+1-555-0149', 'email': 'david.kim@ecopulse.com'}
+                    },
+                    'detection_location': {'lat': 25.7617, 'lng': -80.1918, 'zone': 'Solar Array Block C'},
+                    'failure_progression': [85, 78, 65, 52, 38, 28, 15],  # Performance degradation over time
+                },
+                'High': {
+                    'primary_issue': 'Panel soiling and micro-crack development',
+                    'root_cause': 'Accumulated dust and debris reducing light absorption by 18%. Recent weather patterns and improper cleaning have led to micro-crack formation in 12 panels.',
+                    'symptoms': ['Reduced power output in affected string', 'Hot spot formation', 'Visible soiling patterns', 'Electrical mismatch'],
+                    'detection_method': f'UFD Meter {meter_id} detected flow irregularities in DC current patterns',
+                    'maintenance_required': [
+                        '1. Professional panel cleaning with deionized water',
+                        '2. Thermal imaging inspection for hot spots',
+                        '3. Electrical testing of affected panels',
+                        '4. Panel replacement if micro-cracks exceed 15% area'
+                    ],
+                    'parts_needed': [
+                        'Replacement solar panels (if needed) - $4,200',
+                        'Professional cleaning solution - $85',
+                        'Panel mounting hardware - $150'
+                    ],
+                    'contacts': {
+                        'primary': {'name': 'Lisa Park', 'role': 'Solar Maintenance Tech', 'phone': '+1-555-0150', 'email': 'lisa.park@ecopulse.com'},
+                        'backup': {'name': 'Marcus Chen', 'role': 'Senior Solar Technician', 'phone': '+1-555-0147', 'email': 'marcus.chen@ecopulse.com'}
+                    },
+                    'detection_location': {'lat': 25.7620, 'lng': -80.1915, 'zone': 'Solar Array Block A'},
+                    'failure_progression': [95, 88, 82, 76, 71, 68, 65]
+                }
+            },
+            'Wind': {
+                'Critical': {
+                    'primary_issue': 'Main gearbox bearing failure with metal debris contamination',
+                    'root_cause': 'Excessive vibration and inadequate lubrication caused catastrophic bearing failure. Metal particles in oil sample indicate advanced wear. Wind patterns and turbulence data from UFD sensors show correlation with failure progression.',
+                    'symptoms': ['Abnormal vibration levels >8mm/s', 'Oil temperature >75°C', 'Metal particles in oil', 'Unusual noise during operation'],
+                    'detection_method': f'UFD Meter {meter_id} ultrasonic sensors detected bearing signature changes and oil flow anomalies',
+                    'maintenance_required': [
+                        '1. Complete gearbox replacement or rebuild',
+                        '2. Oil system flush and replacement',
+                        '3. Vibration monitoring system calibration',
+                        '4. Bearing housing inspection and repair',
+                        '5. Coupling alignment verification'
+                    ],
+                    'parts_needed': [
+                        'Main gearbox assembly - $15,200',
+                        'Synthetic gear oil (200L) - $1,800',
+                        'Bearing sets (various sizes) - $3,400',
+                        'Oil filtration system - $950',
+                        'Vibration sensors - $650'
+                    ],
+                    'contacts': {
+                        'primary': {'name': 'Robert Johnson', 'role': 'Wind Turbine Specialist', 'phone': '+1-555-0151', 'email': 'robert.johnson@ecopulse.com'},
+                        'backup': {'name': 'Amanda Torres', 'role': 'Mechanical Engineer', 'phone': '+1-555-0152', 'email': 'amanda.torres@ecopulse.com'},
+                        'supervisor': {'name': 'James Wilson', 'role': 'Wind Operations Manager', 'phone': '+1-555-0153', 'email': 'james.wilson@ecopulse.com'}
+                    },
+                    'detection_location': {'lat': 25.7625, 'lng': -80.1925, 'zone': 'Wind Turbine WT-03'},
+                    'failure_progression': [92, 85, 74, 58, 41, 25, 12]
+                }
+            },
+            'Hydrogen': {
+                'Critical': {
+                    'primary_issue': 'Electrolyzer stack membrane degradation with gas crossover',
+                    'root_cause': 'Proton exchange membrane (PEM) degradation due to impure water feedstock and excessive operating temperatures. Gas purity analysis shows hydrogen-oxygen crossover indicating membrane failure.',
+                    'symptoms': ['Hydrogen purity <99.95%', 'Increased power consumption', 'Stack temperature >80°C', 'Pressure differential anomalies'],
+                    'detection_method': f'UFD Meter {meter_id} detected pressure wave anomalies and flow irregularities in the electrolysis process',
+                    'maintenance_required': [
+                        '1. Complete membrane electrode assembly (MEA) replacement',
+                        '2. Water treatment system overhaul',
+                        '3. Gas separation system inspection',
+                        '4. Pressure vessel integrity testing',
+                        '5. Safety system recalibration'
+                    ],
+                    'parts_needed': [
+                        'PEM electrolyzer stack - $12,500',
+                        'Water purification filters - $850',
+                        'Gas separation membranes - $1,200',
+                        'Pressure regulators - $650',
+                        'Safety relief valves - $450'
+                    ],
+                    'contacts': {
+                        'primary': {'name': 'Dr. Elena Vasquez', 'role': 'Hydrogen Systems Engineer', 'phone': '+1-555-0154', 'email': 'elena.vasquez@ecopulse.com'},
+                        'backup': {'name': 'Michael Chang', 'role': 'Process Control Specialist', 'phone': '+1-555-0155', 'email': 'michael.chang@ecopulse.com'}
+                    },
+                    'detection_location': {'lat': 25.7612, 'lng': -80.1922, 'zone': 'Hydrogen Generation Unit H2-01'},
+                    'failure_progression': [88, 79, 68, 54, 39, 26, 18]
+                }
+            },
+            'Oil & Gas': {
+                'Critical': {
+                    'primary_issue': 'Pipeline pressure vessel fatigue cracking with potential leak risk',
+                    'root_cause': 'Cyclic pressure loading and corrosion under insulation (CUI) have created fatigue cracks in the main process pipeline. Ultrasonic testing reveals crack propagation approaching critical length.',
+                    'symptoms': ['Pressure drop of 15 PSI', 'Unusual vibration patterns', 'Temperature anomalies', 'Slight hydrocarbon odor'],
+                    'detection_method': f'UFD Meter {meter_id} ultrasonic sensors detected wall thickness variations and flow disturbances',
+                    'maintenance_required': [
+                        '1. Pipeline section replacement with upgraded materials',
+                        '2. Comprehensive ultrasonic testing of adjacent sections',
+                        '3. Insulation system replacement',
+                        '4. Corrosion protection system upgrade',
+                        '5. Pressure testing and recertification'
+                    ],
+                    'parts_needed': [
+                        'Pipeline sections (carbon steel) - $8,900',
+                        'Flanges and fittings - $1,500',
+                        'Corrosion-resistant coating - $750',
+                        'Thermal insulation - $650',
+                        'Pressure test equipment rental - $400'
+                    ],
+                    'contacts': {
+                        'primary': {'name': 'Captain Jake Morrison', 'role': 'Pipeline Integrity Specialist', 'phone': '+1-555-0156', 'email': 'jake.morrison@ecopulse.com'},
+                        'backup': {'name': 'Rachel Thompson', 'role': 'Process Safety Engineer', 'phone': '+1-555-0157', 'email': 'rachel.thompson@ecopulse.com'}
+                    },
+                    'detection_location': {'lat': 25.7608, 'lng': -80.1928, 'zone': 'Process Unit PU-04'},
+                    'failure_progression': [90, 82, 71, 57, 42, 29, 16]
+                }
+            }
         }
         
-        # Select description based on health state severity
-        options = descriptions.get(system_type, ['General maintenance required'])
-        if health_state >= 3.0:
-            return options[0]  # Most critical issue
-        elif health_state >= 2.0:
-            return options[1] if len(options) > 1 else options[0]
-        elif health_state >= 1.5:
-            return options[2] if len(options) > 2 else options[0]
-        else:
-            return options[3] if len(options) > 3 else options[0]
+        # Get appropriate details or create generic ones
+        category_data = maintenance_db.get(system_type, {})
+        priority_data = category_data.get(priority)
+        
+        if not priority_data:
+            # Generic fallback for missing combinations
+            priority_data = {
+                'primary_issue': f'{system_type} system requires {priority.lower()} priority maintenance',
+                'root_cause': f'System health degradation detected through UFD sensor analysis indicating performance issues',
+                'symptoms': ['Performance degradation', 'Unusual sensor readings', 'Efficiency loss'],
+                'detection_method': f'UFD Meter {meter_id} detected anomalous patterns',
+                'maintenance_required': ['System inspection required', 'Performance testing', 'Component replacement if needed'],
+                'parts_needed': ['To be determined after inspection'],
+                'contacts': {
+                    'primary': {'name': 'Operations Team', 'role': 'Maintenance Coordinator', 'phone': '+1-555-0100', 'email': 'operations@ecopulse.com'}
+                },
+                'detection_location': {'lat': 25.7615, 'lng': -80.1920, 'zone': f'{system_type} System'},
+                'failure_progression': [80, 75, 68, 60, 52, 45, 38]
+            }
+        
+        # Add common fields
+        priority_data.update({
+            'tools_required': ['Multimeter', 'Thermal camera', 'Ultrasonic tester', 'Safety equipment'],
+            'safety_precautions': ['Lockout/Tagout procedures', 'Personal protective equipment', 'Gas detection if applicable', 'Hot work permits'],
+            'estimated_downtime': f'{2 if priority == "Critical" else 1} days',
+            'environmental_impact': 'Temporary reduction in renewable energy output during maintenance'
+        })
+        
+        return priority_data
+    
+    def _generate_health_timeline(self, current_health, sensor_data):
+        """Generate health timeline data for graphing"""
+        # Create a 30-day health timeline
+        timeline = []
+        base_health = current_health
+        
+        for i in range(30):
+            date = (datetime.now() - timedelta(days=29-i)).strftime('%Y-%m-%d')
+            
+            # Simulate health degradation over time with some randomness
+            health_variation = np.random.uniform(-0.3, 0.1)  # Slight downward trend
+            base_health = max(1.0, min(4.0, base_health + health_variation))
+            
+            timeline.append({
+                'date': date,
+                'health_score': round(base_health, 2),
+                'performance': round((5 - base_health) / 4 * 100, 1)  # Convert to performance %
+            })
+        
+        return timeline
         
         # Generate usage history based on UFD data patterns
         self.generate_usage_history()
@@ -552,6 +732,11 @@ def home():
 def current_status():
     """Current status page with energy monitoring and maintenance"""
     return render_template('current_status.html')
+
+@app.route('/current-status-fixed')
+def current_status_fixed():
+    """Fixed current status page for debugging"""
+    return render_template('current_status_fixed.html')
 
 @app.route('/future-projection')
 def future_projection():
