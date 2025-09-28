@@ -43,7 +43,7 @@ class EnergyManagementSystem:
         self.current_status = {
             'power_percentage': 87.5,
             'clean_percentage': 72.3,
-            'net_zero_percentage': 68.9
+            'net_zero_percentage': 36.2
         }
         self.energy_sources = {
             'solar': {'current': 35.2, 'capacity': 100, 'efficiency': 85.1},
@@ -760,7 +760,7 @@ def get_home_data():
             ems.current_status = {
                 'power_percentage': 87.5,
                 'clean_percentage': 72.3,
-                'net_zero_percentage': 68.9
+                'net_zero_percentage': 36.2
             }
         
         if not hasattr(ems, 'maintenance_items') or not ems.maintenance_items:
@@ -773,7 +773,7 @@ def get_home_data():
             'status': 'success',
             'power_percentage': ems.current_status.get('power_percentage', 87.5),
             'clean_percentage': ems.current_status.get('clean_percentage', 72.3),
-            'net_zero_percentage': ems.current_status.get('net_zero_percentage', 68.9),
+            'net_zero_percentage': ems.current_status.get('net_zero_percentage', 36.2),
             'critical_maintenance': critical_maintenance
         })
     except Exception as e:
@@ -783,7 +783,7 @@ def get_home_data():
             'message': str(e),
             'power_percentage': 87.5,
             'clean_percentage': 72.3,
-            'net_zero_percentage': 68.9,
+            'net_zero_percentage': 36.2,
             'critical_maintenance': []
         })
 
