@@ -199,6 +199,44 @@
             color: var(--aramco-green);
         }
         
+        /* Loading animations */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .energy-gauge, .chart-container {
+            position: relative;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--aramco-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         .urgency-critical { border-left: 4px solid #DC3545; }
         .urgency-high { border-left: 4px solid #FD7E14; }
         .urgency-medium { border-left: 4px solid #FFC107; }
@@ -211,12 +249,12 @@
         
         .energy-bar {
             position: relative;
-            height: 400px;
-            width: 80px;
+            height: 450px;
+            width: 100px;
             background: #F8F9FA;
             border: 3px solid var(--aramco-blue);
-            border-radius: 40px;
-            margin: 0 auto;
+            border-radius: 50px;
+            margin: 30px auto 0;
             overflow: hidden;
         }
         
@@ -225,16 +263,16 @@
             bottom: 0;
             width: 100%;
             background: linear-gradient(0deg, var(--aramco-green) 0%, var(--aramco-blue) 50%, var(--aramco-dark-blue) 100%);
-            border-radius: 37px;
+            border-radius: 47px;
             transition: height 1s ease;
         }
         
         .energy-percentage {
             position: absolute;
-            top: -50px;
+            top: -60px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: bold;
             color: var(--aramco-dark-gray);
         }
@@ -313,8 +351,8 @@
                                     Energy Sources Distribution
                                 </h5>
                             </div>
-                            <div class="card-body">
-                                <div id="energy-sources-chart" class="chart-container" style="height: 500px;"></div>
+                            <div class="card-body d-flex justify-content-center align-items-center">
+                                <div id="energy-sources-chart" class="chart-container" style="height: 600px; width: 100%;"></div>
                             </div>
                         </div>
                     </div>
@@ -335,7 +373,7 @@
                             </div>
                             <div class="card-body">
                                 <div id="usage-history-chart" class="chart-container" style="height: 350px;"></div>
-                                <div id="history-summary" class="mt-3">
+                                <div id="history-summary" class="mt-3" style="display: none;">
                                     <h6 class="mb-2">Live Performance</h6>
                                     <div id="summary-stats"></div>
                                 </div>
@@ -390,7 +428,7 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="text-center p-3 bg-light rounded">
-                                    <h6 class="text-muted">Maintenance Priority Distribution</h6>
+                                    <h6 class="text-dark fw-bold">Maintenance Priority Distribution</h6>
                                     <div id="priority-distribution-chart" style="height: 330px;"></div>
                                 </div>
                             </div>
@@ -434,11 +472,30 @@
         let maintenanceData = [];
         let showAllMaintenance = false;
         let maintenanceUpdatesEnabled = false; // Keep maintenance static by default
+        
+        // Initialization flags to prevent re-animation on refresh
+        let energyBarInitialized = false;
+        let energySourcesInitialized = false;
+        let usageHistoryInitialized = false;
 
         document.addEventListener('DOMContentLoaded', function() {
-            loadCurrentStatusLive();
-            loadMaintenanceItems();
-            loadUsageHistory();
+            // Load components with staggered timing for better visual effect
+            loadCurrentStatusLive(); // Energy bar loads immediately
+            
+            setTimeout(() => {
+                // Pie chart loads after 1 second
+                if (window.energySourcesData) {
+                    createEnergySourcesChart(window.energySourcesData);
+                }
+            }, 1000);
+            
+            setTimeout(() => {
+                loadUsageHistory(); // Line chart loads after 2 seconds
+            }, 2000);
+            
+            setTimeout(() => {
+                loadMaintenanceItems(); // Maintenance items after 3 seconds
+            }, 3000);
             
             // Initialize live data simulation
             lastUpdateTime = Date.now();
@@ -462,78 +519,182 @@
             const fill = document.getElementById('energy-fill');
             const percentageText = document.getElementById('energy-percentage');
             
-            // Smooth transition for height changes
-            fill.style.height = percentage + '%';
-            percentageText.textContent = percentage + '%';
-            
-            // Add color coding based on energy level
+            // Determine color based on percentage
+            let targetColor;
             if (percentage > 85) {
-                fill.style.background = 'linear-gradient(0deg, #28a745 0%, #84BD00 50%, #00A3E0 100%)';
+                targetColor = 'linear-gradient(0deg, #28a745 0%, #84BD00 50%, #00A3E0 100%)';
             } else if (percentage > 70) {
-                fill.style.background = 'linear-gradient(0deg, #ffc107 0%, #84BD00 50%, #00A3E0 100%)';
+                targetColor = 'linear-gradient(0deg, #ffc107 0%, #84BD00 50%, #00A3E0 100%)';
             } else {
-                fill.style.background = 'linear-gradient(0deg, #dc3545 0%, #fd7e14 50%, #ffc107 100%)';
+                targetColor = 'linear-gradient(0deg, #dc3545 0%, #fd7e14 50%, #ffc107 100%)';
             }
             
-            // Add subtle animation to percentage text when value changes
-            percentageText.style.transform = 'translateX(-50%) scale(1.1)';
-            setTimeout(() => {
-                percentageText.style.transform = 'translateX(-50%) scale(1)';
-            }, 200);
+            if (!energyBarInitialized) {
+                // First load - animate from 0
+                fill.style.height = '0%';
+                percentageText.textContent = '0%';
+                
+                // Animate the energy bar filling up
+                const steps = 50;
+                let currentStep = 0;
+                
+                const animateBar = () => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+                    const currentValue = percentage * progress;
+                    
+                    fill.style.height = currentValue + '%';
+                    percentageText.textContent = Math.round(currentValue) + '%';
+                    fill.style.background = targetColor;
+                    
+                    // Add pulsing effect during animation
+                    percentageText.style.transform = 'translateX(-50%) scale(' + (1 + 0.1 * Math.sin(progress * Math.PI)) + ')';
+                    
+                    if (currentStep < steps) {
+                        setTimeout(animateBar, 60); // 60ms per step = ~3 second total animation
+                    } else {
+                        // Final state - remove pulsing and mark as initialized
+                        percentageText.style.transform = 'translateX(-50%) scale(1)';
+                        energyBarInitialized = true;
+                    }
+                };
+                
+                // Start animation after a short delay
+                setTimeout(animateBar, 200);
+            } else {
+                // Subsequent updates - smooth transition without full animation
+                fill.style.transition = 'height 0.8s ease-in-out';
+                percentageText.style.transition = 'all 0.3s ease';
+                
+                fill.style.height = percentage + '%';
+                percentageText.textContent = percentage + '%';
+                fill.style.background = targetColor;
+                
+                // Brief highlight effect for updates
+                percentageText.style.transform = 'translateX(-50%) scale(1.05)';
+                setTimeout(() => {
+                    percentageText.style.transform = 'translateX(-50%) scale(1)';
+                }, 200);
+            }
         }
 
         function createEnergySourcesChart(sources) {
             const sourceNames = Object.keys(sources);
-            const currentValues = sourceNames.map(source => sources[source].current);
+            const targetValues = sourceNames.map(source => sources[source].current);
             const efficiencyValues = sourceNames.map(source => sources[source].efficiency);
 
             // Format source names properly
             const formattedNames = sourceNames.map(name => {
                 switch(name) {
-                    case 'oil_gas': return 'Oil & Gas';
-                    case 'solar': return 'Solar';
-                    case 'wind': return 'Wind';
-                    case 'hydrogen': return 'Hydrogen';
-                    default: return name.charAt(0).toUpperCase() + name.slice(1);
+                    case 'oil_gas': return '<b>Oil & Gas</b>';
+                    case 'solar': return '<b>Solar</b>';
+                    case 'wind': return '<b>Wind</b>';
+                    case 'hydrogen': return '<b>Hydrogen</b>';
+                    default: return '<b>' + name.charAt(0).toUpperCase() + name.slice(1) + '</b>';
                 }
             });
 
-            const data = [{
-                values: currentValues,
-                labels: formattedNames,
-                type: 'pie',
-                textinfo: 'label+percent+value',
-                texttemplate: '%{label}<br>%{value} MW<br>%{percent}',
-                marker: {
-                    colors: ['#FFD700', '#87CEEB', '#32CD32', '#FF6B35'],
-                    line: { color: '#FFFFFF', width: 2 }
-                },
-                hovertemplate: '<b>%{label}</b><br>' +
-                              'Output: %{value} MW<br>' +
-                              'Share: %{percent}<br>' +
-                              '<extra></extra>'
-            }];
+            if (!energySourcesInitialized) {
+                // First load - animate from zero values
+                const initialData = [{
+                    values: sourceNames.map(() => 0), // Start with all zeros
+                    labels: formattedNames,
+                    type: 'pie',
+                    sort: false,
+                    textinfo: 'label+percent',
+                    texttemplate: '%{label}<br>%{percent}',
+                    marker: {
+                        colors: ['#FFD700', '#87CEEB', '#32CD32', '#FF6B35'],
+                        line: { color: '#FFFFFF', width: 2 }
+                    },
+                    hovertemplate: '<b>%{label}</b><br>' +
+                                  'Output: %{value} MW<br>' +
+                                  'Share: %{percent}<br>' +
+                                  '<extra></extra>'
+                }];
 
-            const layout = {
-                title: {
-                    text: 'Energy Sources Distribution',
-                    font: { color: '#323232', size: 20, weight: 'bold' }
-                },
-                paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(248,249,250,0.5)',
-                margin: { t: 80, b: 60, l: 50, r: 50 },
-                font: { family: 'Segoe UI, Arial, sans-serif', size: 13 },
-                showlegend: true,
-                legend: {
-                    orientation: 'h',
-                    x: 0.5,
-                    xanchor: 'center',
-                    y: -0.1,
-                    font: { size: 12 }
-                }
-            };
+                const layout = {
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(248,249,250,0.5)',
+                    margin: { t: 80, b: 60, l: 50, r: 50 },
+                    font: { family: 'Segoe UI, Arial, sans-serif', size: 16, weight: 'bold' },
+                    showlegend: true,
+                    legend: {
+                        orientation: 'h',
+                        x: 0.5,
+                        xanchor: 'center',
+                        y: -0.1,
+                        font: { size: 14, weight: 'bold' }
+                    }
+                };
 
-            Plotly.newPlot('energy-sources-chart', data, layout, {responsive: true, displayModeBar: false});
+                // Create chart with initial zero values
+                Plotly.newPlot('energy-sources-chart', initialData, layout, {
+                    responsive: true, 
+                    displayModeBar: false
+                });
+                
+            // Animate to final values with longer delay
+            setTimeout(() => {
+                const steps = 10; // More steps for smoother animation
+                let currentStep = 0;
+                
+                const animateStep = () => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+                    const currentValues = targetValues.map(value => value * progress);
+                    
+                    const animatedData = {
+                        values: [currentValues]
+                    };
+                    
+                    Plotly.restyle('energy-sources-chart', animatedData);
+                    
+                    if (currentStep < steps) {
+                        setTimeout(animateStep, 10); // Slower animation - 80ms per step
+                    } else {
+                        energySourcesInitialized = true;
+                        console.log('Pie chart animation completed');
+                    }
+                };
+                
+                animateStep();
+            }, 1500); // Longer delay - start after 1.5 seconds
+
+            } else {
+                // Subsequent updates - direct update with smooth transition
+                const data = [{
+                    values: targetValues,
+                    labels: formattedNames,
+                    type: 'pie',
+                    sort: false,
+                    textinfo: 'label+percent',
+                    texttemplate: '%{label}<br>%{percent}',
+                    marker: {
+                        colors: ['#FFD700', '#87CEEB', '#32CD32', '#FF6B35'],
+                        line: { color: '#FFFFFF', width: 2 }
+                    },
+                    hovertemplate: '<b>%{label}</b><br>' +
+                                  'Output: %{value} MW<br>' +
+                                  'Share: %{percent}<br>' +
+                                  '<extra></extra>'
+                }];
+                
+                // Smooth update with transition
+                Plotly.restyle('energy-sources-chart', { values: [targetValues] }, [0]);
+            }
+            
+            // Store the data for future updates
+            window.chartData = { targetValues, formattedNames };
+        }
+
+        // Function to update chart with animation when values change
+        function updateEnergySourcesChart(newSources) {
+            const sourceNames = Object.keys(newSources);
+            const newValues = sourceNames.map(source => newSources[source].current);
+            
+            // Update with smooth animation
+            Plotly.restyle('energy-sources-chart', 'values', [newValues]);
         }
 
         async function loadMaintenanceItems() {
@@ -1049,32 +1210,55 @@
         }
 
         // Function to handle status changes from quick action buttons
-        function setStatus(itemId, newStatus) {
-            // Update the item status directly for immediate feedback
-            const item = maintenanceData.find(item => item.id == itemId);
-            if (item) {
-                item.status = newStatus;
-                
-                // Show success toast with appropriate message
-                let message = '';
-                switch(newStatus) {
-                    case 'Scheduled':
-                        message = 'Maintenance has been scheduled';
-                        break;
-                    case 'In Progress':
-                        message = 'Maintenance is now in progress';
-                        break;
-                    case 'Completed':
-                        message = 'Maintenance has been completed';
-                        break;
-                    default:
-                        message = 'Maintenance status updated';
+        async function setStatus(itemId, newStatus) {
+            try {
+                // Update the item status directly for immediate feedback
+                const item = maintenanceData.find(item => item.id == itemId);
+                if (item) {
+                    item.status = newStatus;
+                    
+                    // Show success toast with appropriate message
+                    let message = '';
+                    switch(newStatus) {
+                        case 'Scheduled':
+                            message = 'Maintenance has been scheduled';
+                            break;
+                        case 'In Progress':
+                            message = 'Maintenance is now in progress';
+                            break;
+                        case 'Completed':
+                            message = 'Maintenance has been completed';
+                            break;
+                        default:
+                            message = 'Maintenance status updated';
+                    }
+                    
+                    showToast('Status Updated', message, 'success');
+                    
+                    // Update display immediately without refresh
+                    displayMaintenanceItems(maintenanceData);
                 }
                 
-                showToast('Status Updated', message, 'success');
+                // Try to update via API in the background (optional)
+                try {
+                    const response = await fetch(`/api/update_maintenance/${itemId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    
+                    if (response.ok) {
+                        console.log('✅ Status successfully synced with server');
+                    } else {
+                        console.log('⚠️ Server sync failed, but local update succeeded');
+                    }
+                } catch (apiError) {
+                    console.log('⚠️ API unavailable, but local update succeeded:', apiError);
+                }
                 
-                // Refresh the display
-                displayMaintenanceItems(maintenanceData);
+            } catch (error) {
+                console.error('❌ Error updating status:', error);
+                showToast('Error updating status', 'Please try again', 'error');
             }
         }
 
@@ -1195,6 +1379,12 @@
                     
                     createUsageHistoryChart(data.history);
                     displayHistorySummary(data.summary);
+                    
+                    // Show the Live Performance section when line chart appears
+                    const historySummary = document.getElementById('history-summary');
+                    if (historySummary) {
+                        historySummary.style.display = 'block';
+                    }
                 }
             } catch (error) {
                 console.error('Error loading usage history:', error);
@@ -1246,39 +1436,11 @@
             console.log('Usage History Data:', history);
             console.log('Clean Energy Values:', history.map(h => h.clean_energy));
             
-            const data = [
-                {
-                    x: dates,
-                    y: history.map(h => h.power_generated),
-                    name: 'Power (MW)',
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    line: { color: '#84BD00', width: 2 },
-                    marker: { color: '#84BD00', size: 4 },
-                    yaxis: 'y1'
-                },
-                {
-                    x: dates,
-                    y: history.map(h => h.clean_energy),
-                    name: 'Clean %',
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    line: { color: '#00A3E0', width: 2 },
-                    marker: { color: '#00A3E0', size: 4 },
-                    yaxis: 'y2'
-                },
-                {
-                    x: dates,
-                    y: history.map(h => h.net_zero_score),
-                    name: 'Net Zero %',
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    line: { color: '#00843D', width: 2 },
-                    marker: { color: '#00843D', size: 4 },
-                    yaxis: 'y2'
-                }
-            ];
-
+            // Prepare final data arrays
+            const powerData = history.map(h => h.power_generated);
+            const cleanData = history.map(h => h.clean_energy);
+            const netZeroData = history.map(h => h.net_zero_score);
+            
             const layout = {
                 title: {
                     text: liveDataEnabled ? 'Live Performance Trends ●' : 'Performance Trends',
@@ -1314,7 +1476,121 @@
                 margin: { t: 50, b: 50, l: 50, r: 50 }
             };
 
-            Plotly.newPlot('usage-history-chart', data, layout, {responsive: true, displayModeBar: false});
+            if (!usageHistoryInitialized) {
+                // First load - rapid twitchy animation
+                const initialData = [
+                    {
+                        x: [],
+                        y: [],
+                        name: 'Power (MW)',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#84BD00', width: 2 },
+                        marker: { color: '#84BD00', size: 4 },
+                        yaxis: 'y1'
+                    },
+                    {
+                        x: [],
+                        y: [],
+                        name: 'Clean %',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#00A3E0', width: 2 },
+                        marker: { color: '#00A3E0', size: 4 },
+                        yaxis: 'y2'
+                    },
+                    {
+                        x: [],
+                        y: [],
+                        name: 'Net Zero %',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#00843D', width: 2 },
+                        marker: { color: '#00843D', size: 4 },
+                        yaxis: 'y2'
+                    }
+                ];
+
+                // Create initial empty chart
+                Plotly.newPlot('usage-history-chart', initialData, layout, {responsive: true, displayModeBar: false});
+                
+                // Rapid progressive data animation - start immediately
+                const totalPoints = dates.length;
+                let currentPoint = 0;
+                
+                // Store data arrays that we'll build progressively
+                const progressiveData = [
+                    { x: [], y: [] }, // Power
+                    { x: [], y: [] }, // Clean
+                    { x: [], y: [] }  // Net Zero
+                ];
+                
+                const addDataPoint = () => {
+                    if (currentPoint < totalPoints) {
+                        // Add current data point to progressive arrays
+                        progressiveData[0].x.push(dates[currentPoint]);
+                        progressiveData[0].y.push(powerData[currentPoint]);
+                        progressiveData[1].x.push(dates[currentPoint]);
+                        progressiveData[1].y.push(cleanData[currentPoint]);
+                        progressiveData[2].x.push(dates[currentPoint]);
+                        progressiveData[2].y.push(netZeroData[currentPoint]);
+                        
+                        // Update chart with current progressive data
+                        const update = {
+                            x: [progressiveData[0].x, progressiveData[1].x, progressiveData[2].x],
+                            y: [progressiveData[0].y, progressiveData[1].y, progressiveData[2].y]
+                        };
+                        
+                        Plotly.restyle('usage-history-chart', update);
+                        currentPoint++;
+                        
+                        // Very fast, twitchy delay - rapid succession
+                        setTimeout(addDataPoint, 25); // Super fast 25ms intervals for twitchy effect
+                    } else {
+                        usageHistoryInitialized = true;
+                        console.log('Usage history rapid animation completed with', totalPoints, 'data points');
+                    }
+                };
+                
+                addDataPoint(); // Start immediately, no initial delay
+            } else {
+                // Subsequent updates - use Plotly.react for cleaner updates
+                const data = [
+                    {
+                        x: dates,
+                        y: powerData,
+                        name: 'Power (MW)',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#84BD00', width: 2 },
+                        marker: { color: '#84BD00', size: 4 },
+                        yaxis: 'y1'
+                    },
+                    {
+                        x: dates,
+                        y: cleanData,
+                        name: 'Clean %',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#00A3E0', width: 2 },
+                        marker: { color: '#00A3E0', size: 4 },
+                        yaxis: 'y2'
+                    },
+                    {
+                        x: dates,
+                        y: netZeroData,
+                        name: 'Net Zero %',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#00843D', width: 2 },
+                        marker: { color: '#00843D', size: 4 },
+                        yaxis: 'y2'
+                    }
+                ];
+                
+                // Use Plotly.react for cleaner updates without jarring
+                Plotly.react('usage-history-chart', data, layout, {responsive: true, displayModeBar: false});
+            }
         }
 
         function displayHistorySummary(summary) {
@@ -1400,32 +1676,7 @@
             modal.show();
         }
         
-        async function setStatus(itemId, newStatus) {
-            try {
-                const response = await fetch(`/api/update_maintenance/${itemId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
-                });
-                
-                if (response.ok) {
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('statusModal'));
-                    modal.hide();
-                    
-                    // Show success toast
-                    showToast('Status updated successfully!', 'success');
-                    
-                    // Refresh the list
-                    loadMaintenanceItems();
-                } else {
-                    showToast('Failed to update status', 'error');
-                }
-            } catch (error) {
-                console.error('Error updating status:', error);
-                showToast('Error updating status', 'error');
-            }
-        }
+
         
         function showToast(message, type) {
             const toastHtml = `
@@ -1466,24 +1717,34 @@
         // Live data simulation variables
         let liveDataEnabled = true;
         let baseEnergyLevel = 87.5;
-        let energyTrend = 0.1;
+        let energyTrend = 0.05; // Reduced trend for smoother changes
         let lastUpdateTime = Date.now();
         let simulatedData = {
-            solar: { base: 35.2, trend: 0.05, efficiency: 85.1 },
-            wind: { base: 28.7, trend: -0.03, efficiency: 78.3 },
-            hydrogen: { base: 15.6, trend: 0.02, efficiency: 92.1 },
-            oil_gas: { base: 20.5, trend: -0.01, efficiency: 67.8 }
+            solar: { base: 35.2, trend: 0.02, efficiency: 85.1 }, // Reduced trends
+            wind: { base: 28.7, trend: -0.015, efficiency: 78.3 },
+            hydrogen: { base: 15.6, trend: 0.01, efficiency: 92.1 },
+            oil_gas: { base: 20.5, trend: -0.005, efficiency: 67.8 }
+        };
+        
+        // Previous values for stabilization
+        let previousValues = {
+            total_power: 87.5,
+            energy_sources: {
+                solar: { current: 35.2, efficiency: 85.1 },
+                wind: { current: 28.7, efficiency: 78.3 },
+                hydrogen: { current: 15.6, efficiency: 92.1 },
+                oil_gas: { current: 20.5, efficiency: 67.8 }
+            }
         };
 
-        // Live data simulation function
+        // Live data simulation function with stabilization
         function simulateLiveData() {
             const now = Date.now();
             const timeDelta = (now - lastUpdateTime) / 1000; // seconds
             lastUpdateTime = now;
 
-            // Simulate energy level changes with some randomness
-            const randomFactor = (Math.random() - 0.5) * 0.2;
-            baseEnergyLevel += (energyTrend + randomFactor) * timeDelta;
+            // Simulate energy level changes with smoother transitions
+            baseEnergyLevel += energyTrend * timeDelta;
             
             // Keep energy level within realistic bounds
             if (baseEnergyLevel > 95) {
@@ -1494,16 +1755,15 @@
                 energyTrend = Math.abs(energyTrend);
             }
             
-            // Occasionally change trend direction
-            if (Math.random() < 0.02) {
+            // Less frequent trend changes for stability
+            if (Math.random() < 0.005) { // Reduced from 0.02 to 0.005
                 energyTrend *= -1;
             }
 
-            // Simulate energy sources with individual patterns
+            // Simulate energy sources with stable patterns
             Object.keys(simulatedData).forEach(source => {
                 const data = simulatedData[source];
-                const sourceRandomFactor = (Math.random() - 0.5) * 0.1;
-                data.base += (data.trend + sourceRandomFactor) * timeDelta;
+                data.base += data.trend * timeDelta;
                 
                 // Keep values within realistic bounds
                 if (data.base > 45) {
@@ -1514,41 +1774,58 @@
                     data.trend = Math.abs(data.trend);
                 }
                 
-                // Efficiency changes slowly
-                data.efficiency += (Math.random() - 0.5) * 0.05;
+                // Efficiency stays stable
                 data.efficiency = Math.max(60, Math.min(95, data.efficiency));
-                
-                // Occasionally change trend
-                if (Math.random() < 0.01) {
-                    data.trend *= -1;
-                }
             });
 
-            return {
-                total_power: Math.round(baseEnergyLevel * 10) / 10,
-                energy_sources: {
-                    solar: { 
-                        current: Math.round(simulatedData.solar.base * 10) / 10, 
-                        capacity: 100, 
-                        efficiency: Math.round(simulatedData.solar.efficiency * 10) / 10 
-                    },
-                    wind: { 
-                        current: Math.round(simulatedData.wind.base * 10) / 10, 
-                        capacity: 100, 
-                        efficiency: Math.round(simulatedData.wind.efficiency * 10) / 10 
-                    },
-                    hydrogen: { 
-                        current: Math.round(simulatedData.hydrogen.base * 10) / 10, 
-                        capacity: 50, 
-                        efficiency: Math.round(simulatedData.hydrogen.efficiency * 10) / 10 
-                    },
-                    oil_gas: { 
-                        current: Math.round(simulatedData.oil_gas.base * 10) / 10, 
-                        capacity: 80, 
-                        efficiency: Math.round(simulatedData.oil_gas.efficiency * 10) / 10 
-                    }
+            // Calculate new values
+            const newTotalPower = Math.round(baseEnergyLevel * 10) / 10;
+            const newSources = {
+                solar: { 
+                    current: Math.round(simulatedData.solar.base * 10) / 10, 
+                    capacity: 100, 
+                    efficiency: Math.round(simulatedData.solar.efficiency * 10) / 10 
+                },
+                wind: { 
+                    current: Math.round(simulatedData.wind.base * 10) / 10, 
+                    capacity: 100, 
+                    efficiency: Math.round(simulatedData.wind.efficiency * 10) / 10 
+                },
+                hydrogen: { 
+                    current: Math.round(simulatedData.hydrogen.base * 10) / 10, 
+                    capacity: 50, 
+                    efficiency: Math.round(simulatedData.hydrogen.efficiency * 10) / 10 
+                },
+                oil_gas: { 
+                    current: Math.round(simulatedData.oil_gas.base * 10) / 10, 
+                    capacity: 80, 
+                    efficiency: Math.round(simulatedData.oil_gas.efficiency * 10) / 10 
                 }
             };
+
+            // Value stabilization: only return new values if they differ significantly from previous ones
+            const powerDiff = Math.abs(newTotalPower - previousValues.total_power);
+            const shouldUpdate = powerDiff >= 0.2; // Only update if difference is >= 0.2
+            
+            if (shouldUpdate) {
+                // Update previous values
+                previousValues.total_power = newTotalPower;
+                Object.keys(newSources).forEach(source => {
+                    previousValues.energy_sources[source].current = newSources[source].current;
+                    previousValues.energy_sources[source].efficiency = newSources[source].efficiency;
+                });
+                
+                return {
+                    total_power: newTotalPower,
+                    energy_sources: newSources
+                };
+            } else {
+                // Return previous stable values to prevent flickering
+                return {
+                    total_power: previousValues.total_power,
+                    energy_sources: previousValues.energy_sources
+                };
+            }
         }
 
         // Enhanced live data loading
@@ -1566,8 +1843,16 @@
                 }
                 
                 if (data.status === 'success') {
+                    // Update energy bar immediately
                     updateEnergyBar(data.total_power);
-                    createEnergySourcesChart(data.energy_sources);
+                    
+                    // Store pie chart data for delayed loading
+                    window.energySourcesData = data.energy_sources;
+                    
+                    // If pie chart is already initialized, update it
+                    if (energySourcesInitialized) {
+                        createEnergySourcesChart(data.energy_sources);
+                    }
                     
                     // Add visual indicator for live data
                     updateLiveDataIndicator();
@@ -1595,12 +1880,26 @@
             }
         }
 
-        // Auto-refresh with live data simulation (every 5 seconds) - EXCLUDES maintenance data
-        setInterval(() => {
+        // Auto-refresh with live data simulation - more stable intervals
+        let refreshInterval;
+        
+        // Start with 5 second intervals
+        refreshInterval = setInterval(() => {
             loadCurrentStatusLive();
             loadUsageHistory();
             // loadMaintenanceItems(); // Removed - maintenance is now static by default
         }, 5000);
+        
+        // After 10 seconds, switch to moderate 3 second intervals (not too fast to avoid flickering)
+        setTimeout(() => {
+            clearInterval(refreshInterval); // Stop the slow interval
+            refreshInterval = setInterval(() => {
+                loadCurrentStatusLive();
+                loadUsageHistory();
+                // loadMaintenanceItems(); // Removed - maintenance is now static by default
+            }, 2000);
+            console.log('Switched to moderate refresh mode (3 second intervals)');
+        }, 7000); 
 
         // Add CSS animation for live indicator
         const style = document.createElement('style');
@@ -1639,3 +1938,4 @@
     </script>
 </body>
 </html>
+

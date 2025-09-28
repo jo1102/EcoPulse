@@ -422,7 +422,7 @@
                 'A': { name: 'Solar Panels', icon: 'fa-sun', color: 'warning' },
                 'B': { name: 'Wind Turbines', icon: 'fa-wind', color: 'info' },
                 'C': { name: 'Hydrogen Generators', icon: 'fa-bolt', color: 'primary' },
-                'D': { name: 'Gas Systems', icon: 'fa-fire', color: 'danger' }
+                'D': { name: 'Oil & Gas Systems', icon: 'fa-fire', color: 'danger' }
             };
             
             Object.entries(analysis.meter_details).forEach(([meterId, details]) => {
@@ -466,23 +466,27 @@
         }
 
         function createPowerChart(percentage) {
-            const data = [{
+            // Start with 0 values for animation
+            const initialData = [{
                 type: 'pie',
-                values: [percentage, 100 - percentage],
+                sort: false,
+                values: [0, 100],
                 labels: ['Active Power', 'Available Capacity'],
                 hole: 0.6,
                 marker: {
                     colors: ['#ffc107', '#e9ecef']
                 },
                 textinfo: 'none',
-                hovertemplate: '%{label}: %{value}%<extra></extra>'
+                hovertemplate: '%{label}: %{value}%<extra></extra>',
+                rotation: 0, 
+                direction: 'counterclockwise' // Use counterclockwise for consistent anticlockwise direction
             }];
 
             const layout = {
                 showlegend: false,
                 margin: { t: 20, b: 20, l: 20, r: 20 },
                 annotations: [{
-                    text: percentage + '%<br><span style="font-size:16px; font-weight:bold;">Power</span>',
+                    text: '0%<br><span style="font-size:16px; font-weight:bold;">Power</span>',
                     font: { size: 28, color: '#495057', weight: 'bold', family: 'Arial Black, sans-serif' },
                     showarrow: false,
                     x: 0.5,
@@ -492,27 +496,61 @@
                 plot_bgcolor: 'rgba(0,0,0,0)'
             };
 
-            Plotly.newPlot('power-chart', data, layout, {responsive: true, displayModeBar: false});
+            // Create chart with initial 0 values
+            Plotly.newPlot('power-chart', initialData, layout, {responsive: true, displayModeBar: false});
+
+            // Animate to final values
+            setTimeout(() => {
+                const steps = 30;
+                let currentStep = 0;
+                
+                const animateStep = () => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+                    const currentValue = percentage * progress;
+                    
+                    const animatedData = {
+                        values: [[currentValue, 100 - currentValue]] // Original order
+                    };
+                    
+                    const animatedAnnotation = {
+                        'annotations[0].text': Math.round(currentValue) + '%<br><span style="font-size:16px; font-weight:bold;">Power</span>'
+                    };
+                    
+                    Plotly.restyle('power-chart', animatedData);
+                    Plotly.relayout('power-chart', animatedAnnotation);
+                    
+                    if (currentStep < steps) {
+                        setTimeout(animateStep, 50);
+                    }
+                };
+                
+                animateStep();
+            }, 200);
         }
 
         function createCleanChart(percentage) {
-            const data = [{
+            // Start with 0 values for animation
+            const initialData = [{
                 type: 'pie',
-                values: [percentage, 100 - percentage],
+                sort: false,
+                values: [0, 100],
                 labels: ['Clean Energy', 'Traditional'],
                 hole: 0.6,
                 marker: {
                     colors: ['#28a745', '#e9ecef']
                 },
                 textinfo: 'none',
-                hovertemplate: '%{label}: %{value}%<extra></extra>'
+                hovertemplate: '%{label}: %{value}%<extra></extra>',
+                rotation: 0, 
+                direction: 'counterclockwise' // Use counterclockwise for consistent anticlockwise direction
             }];
 
             const layout = {
                 showlegend: false,
                 margin: { t: 20, b: 20, l: 20, r: 20 },
                 annotations: [{
-                    text: percentage + '%<br><span style="font-size:16px; font-weight:bold;">Clean</span>',
+                    text: '0%<br><span style="font-size:16px; font-weight:bold;">Clean</span>',
                     font: { size: 28, color: '#495057', weight: 'bold', family: 'Arial Black, sans-serif' },
                     showarrow: false,
                     x: 0.5,
@@ -522,27 +560,61 @@
                 plot_bgcolor: 'rgba(0,0,0,0)'
             };
 
-            Plotly.newPlot('clean-chart', data, layout, {responsive: true, displayModeBar: false});
+            // Create chart with initial 0 values
+            Plotly.newPlot('clean-chart', initialData, layout, {responsive: true, displayModeBar: false});
+
+            // Animate to final values with delay
+            setTimeout(() => {
+                const steps = 30;
+                let currentStep = 0;
+                
+                const animateStep = () => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+                    const currentValue = percentage * progress;
+                    
+                    const animatedData = {
+                        values: [[currentValue, 100 - currentValue]] // Original order
+                    };
+                    
+                    const animatedAnnotation = {
+                        'annotations[0].text': Math.round(currentValue) + '%<br><span style="font-size:16px; font-weight:bold;">Clean</span>'
+                    };
+                    
+                    Plotly.restyle('clean-chart', animatedData);
+                    Plotly.relayout('clean-chart', animatedAnnotation);
+                    
+                    if (currentStep < steps) {
+                        setTimeout(animateStep, 50);
+                    }
+                };
+                
+                animateStep();
+            }, 600); // Delayed start for staggered effect
         }
 
         function createNetZeroChart(percentage) {
-            const data = [{
+            // Start with 0 values for animation
+            const initialData = [{
                 type: 'pie',
-                values: [percentage, 100 - percentage],
+                sort: false,
+                values: [0, 100],
                 labels: ['Net Zero Progress', 'Remaining'],
                 hole: 0.6,
                 marker: {
                     colors: ['#007bff', '#e9ecef']
                 },
                 textinfo: 'none',
-                hovertemplate: '%{label}: %{value}%<extra></extra>'
+                hovertemplate: '%{label}: %{value}%<extra></extra>',
+                rotation: 0, 
+                direction: 'clockwise' // Use counterclockwise for consistent anticlockwise direction
             }];
 
             const layout = {
                 showlegend: false,
                 margin: { t: 20, b: 20, l: 20, r: 20 },
                 annotations: [{
-                    text: percentage + '%<br><span style="font-size:16px; font-weight:bold;">Net Zero</span>',
+                    text: '0%<br><span style="font-size:16px; font-weight:bold;">Net Zero</span>',
                     font: { size: 28, color: '#495057', weight: 'bold', family: 'Arial Black, sans-serif' },
                     showarrow: false,
                     x: 0.5,
@@ -552,7 +624,37 @@
                 plot_bgcolor: 'rgba(0,0,0,0)'
             };
 
-            Plotly.newPlot('netzero-chart', data, layout, {responsive: true, displayModeBar: false});
+            // Create chart with initial 0 values
+            Plotly.newPlot('netzero-chart', initialData, layout, {responsive: true, displayModeBar: false});
+
+            // Animate to final values with longer delay
+            setTimeout(() => {
+                const steps = 30;
+                let currentStep = 0;
+                
+                const animateStep = () => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+                    const currentValue = percentage * progress;
+                    
+                    const animatedData = {
+                        values: [[currentValue, 100 - currentValue]] // Original order
+                    };
+                    
+                    const animatedAnnotation = {
+                        'annotations[0].text': Math.round(currentValue) + '%<br><span style="font-size:16px; font-weight:bold;">Net Zero</span>'
+                    };
+                    
+                    Plotly.restyle('netzero-chart', animatedData);
+                    Plotly.relayout('netzero-chart', animatedAnnotation);
+                    
+                    if (currentStep < steps) {
+                        setTimeout(animateStep, 50);
+                    }
+                };
+                
+                animateStep();
+            }, 1000); // Longest delay for staggered effect
         }
 
         function displayMaintenanceItems(items) {
