@@ -148,7 +148,7 @@
             border: 2px solid #E9ECEF;
             border-radius: 15px;
             padding: 1rem;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1.5rem; /* Increased margin for better spacing */
             transition: all 0.3s ease;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             cursor: pointer;
@@ -173,8 +173,8 @@
         }
 
         .maintenance-collapse-content.show {
-            max-height: 500px;
-            padding: 1rem 0 0 0;
+            max-height: 600px; /* Increased from 500px to ensure all content is visible */
+            padding: 1rem 0 1.5rem 0; /* Added bottom padding for action buttons */
         }
 
         .maintenance-header {
@@ -580,6 +580,9 @@
             const targetValues = sourceNames.map(source => sources[source].current);
             const efficiencyValues = sourceNames.map(source => sources[source].efficiency);
 
+            // Store current values globally for synchronization
+            window.energySourcesData = sources;
+            
             // Format source names properly
             const formattedNames = sourceNames.map(name => {
                 switch(name) {
@@ -681,8 +684,9 @@
                 Plotly.restyle('energy-sources-chart', { values: [targetValues] }, [0]);
             }
             
-            // Store the data for future updates
+            // Store the data for future updates AND make it globally accessible for synchronization
             window.chartData = { targetValues, formattedNames };
+            window.energySourcesData = sources;
         }
 
         // Function to update chart with animation when values change
@@ -690,8 +694,20 @@
             const sourceNames = Object.keys(newSources);
             const newValues = sourceNames.map(source => newSources[source].current);
             
-            // Update with smooth animation
-            Plotly.restyle('energy-sources-chart', 'values', [newValues]);
+            // Store updated values globally for synchronization
+            window.energySourcesData = newSources;
+            
+            console.log('Updating pie chart with values:', newValues);
+            
+            // Update with smooth animation and force redraw
+            Plotly.restyle('energy-sources-chart', { values: [newValues] });
+            
+            // Also trigger display update for live performance
+            setTimeout(() => {
+                if (typeof displayHistorySummary === 'function') {
+                    displayHistorySummary({ total_maintenance_events: 3 });
+                }
+            }, 100);
         }
 
         async function loadMaintenanceItems() {
@@ -829,7 +845,7 @@
                                         <i class="fas fa-exclamation-triangle text-warning"></i>
                                         AI Detection Summary
                                     </h6>
-                                    <p class="mb-2 small">${declineReason}</p>
+                                    <p class="mb-2 small">${getAIDetectionSummary(item.priority, item.category)}</p>
                                     <div class="row text-center">
                                         <div class="col-4">
                                             <div class="text-danger fw-bold">-${getAIDetectedDrop(item.priority, item.id)}%</div>
@@ -863,8 +879,8 @@
                                 <div class="row g-2 mt-2">
                                     <div class="col-6">
                                         <div class="text-center p-2 bg-light rounded">
-                                            <div class="small text-muted">Risk Score</div>
-                                            <div class="fw-bold text-warning">${getRiskScore(item.priority, item.id)}</div>
+                                            <div class="small text-muted">Reliability Index</div>
+                                            <div class="fw-bold text-info">${getReliabilityIndex(item.priority, item.id)}</div>
                                         </div>
                                     </div>
                                     <div class="col-6">
@@ -888,17 +904,17 @@
                                 </div>
 
                                 <!-- Quick Actions (Scheduled Options) -->
-                                <div class="mt-3 pt-2 border-top">
+                                <div class="mt-4 pt-3 border-top" style="margin-bottom: 1rem;"> <!-- Added margin bottom -->
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">Quick Actions:</small>
+                                        <small class="text-muted fw-bold">Quick Actions:</small> <!-- Made label bold -->
                                         <div class="btn-group" role="group">
-                                            <button class="btn btn-sm btn-outline-success" onclick="event.stopPropagation(); setStatus('${item.id}', 'Scheduled')" title="Mark as Scheduled">
+                                            <button class="btn btn-sm btn-outline-success" onclick="event.stopPropagation(); setStatus('${item.id}', 'Scheduled')" title="Mark as Scheduled" style="min-width: 45px;"> <!-- Added min-width -->
                                                 <i class="fas fa-calendar-check"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation(); setStatus('${item.id}', 'In Progress')" title="Mark as In Progress">
+                                            <button class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation(); setStatus('${item.id}', 'In Progress')" title="Mark as In Progress" style="min-width: 45px;">
                                                 <i class="fas fa-play"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); setStatus('${item.id}', 'Completed')" title="Mark as Completed">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); setStatus('${item.id}', 'Completed')" title="Mark as Completed" style="min-width: 45px;">
                                                 <i class="fas fa-check"></i>
                                             </button>
                                         </div>
@@ -934,28 +950,57 @@
             return staticCosts[itemId] || originalCost || 10000;
         }
 
+        // Generate AI Detection Summary - separate from main decline reason
+        function getAIDetectionSummary(priority, category) {
+            const summaries = {
+                'Critical': [
+                    'AI algorithms detected 22% efficiency deterioration in last 48 hours - critical system failure imminent',
+                    'Machine learning models identify imminent catastrophic failure based on sensor data patterns',
+                    'Neural network analysis shows performance degradation exceeding all safety thresholds'
+                ],
+                'High': [
+                    'ML trend analysis reveals 15% performance decline trajectory over 7-day monitoring period', 
+                    'AI diagnostics detect voltage irregularities matching historical failure signatures',
+                    'Predictive algorithms identify significant deviation from optimal efficiency curves'
+                ],
+                'Medium': [
+                    'AI monitoring systems identified gradual performance degradation over 14-day analysis window',
+                    'Machine learning algorithms flagged early warning indicators of potential equipment issues',
+                    'Performance analytics show emerging trends deviating from baseline parameters'
+                ],
+                'Low': [
+                    'Predictive maintenance AI scheduled routine optimization based on usage patterns',
+                    'ML algorithms recommend preventive maintenance to avoid future performance issues', 
+                    'AI system optimization based on comprehensive historical performance data'
+                ]
+            };
+            
+            const prioritySummaries = summaries[priority] || summaries['Low'];
+            return prioritySummaries[Math.floor(Math.random() * prioritySummaries.length)];
+        }
+
         // Generate performance decline reason based on AI training data patterns
         function getPerformanceDeclineReason(priority, category) {
             const reasons = {
                 'Critical': [
-                    'AI detected 18% efficiency drop in last 72 hours - immediate intervention required',
-                    'Predictive model shows imminent failure risk based on vibration patterns',
-                    'Performance degradation exceeds critical threshold from training data'
+                    'Multi-sensor fusion analysis indicates severe operational degradation requiring emergency response protocols',
+                    'Thermal imaging and vibration analysis reveal equipment stress patterns exceeding design specifications', 
+                    'Predictive failure models show critical threshold breach - immediate corrective action mandated'
                 ],
                 'High': [
-                    'ML analysis shows 12% performance decline trend over 5 days',
-                    'Temperature anomaly detected - matches failure patterns from historical data',
-                    'Efficiency curve deviating from normal operational parameters'
+                    'Continuous monitoring systems detect significant performance deviation from baseline parameters',
+                    'Electrical system requires critical priority maintenance due to detected power distribution anomalies and voltage irregularities',
+                    'Advanced diagnostics identify accelerating wear patterns that could lead to system-wide failures'
                 ],
                 'Medium': [
-                    'AI monitoring detected gradual performance decline over 2 weeks',
-                    'Predictive maintenance algorithm flagged early warning indicators',
-                    'Performance metrics showing signs of potential issues ahead'
+                    'Maintenance optimization algorithms recommend preventive intervention based on performance trend analysis',
+                    'Sensor network data indicates gradual efficiency decline requiring scheduled maintenance attention',
+                    'Predictive analytics suggest proactive maintenance to prevent potential reliability issues'
                 ],
                 'Low': [
-                    'Routine maintenance based on predictive scheduling algorithm',
-                    'Preventive maintenance to avoid predicted performance issues',
-                    'Scheduled optimization based on usage pattern analysis'
+                    'Routine maintenance scheduling based on optimal performance lifecycle management protocols',
+                    'Preventive care protocols activated to maintain peak operational efficiency standards',
+                    'Scheduled system optimization following comprehensive usage pattern evaluation'
                 ]
             };
             
@@ -1009,21 +1054,21 @@
             return itemDrops ? itemDrops[priority] || 12.0 : (priority === 'Critical' ? 25.0 : priority === 'High' ? 18.0 : priority === 'Medium' ? 12.0 : 6.0);
         }
 
-        // Get risk score based on multiple factors (priority, performance impact, and equipment type)
-        function getRiskScore(priority, itemId) {
-            const riskScoreMap = {
-                1: { 'Critical': 'A1', 'High': 'B2', 'Medium': 'C3', 'Low': 'D4' },
-                2: { 'Critical': 'A2', 'High': 'B3', 'Medium': 'C4', 'Low': 'D5' },
-                3: { 'Critical': 'A+', 'High': 'A1', 'Medium': 'B2', 'Low': 'C3' },
-                4: { 'Critical': 'B1', 'High': 'C2', 'Medium': 'D3', 'Low': 'E4' },
-                5: { 'Critical': 'A1', 'High': 'B1', 'Medium': 'C2', 'Low': 'D3' },
-                6: { 'Critical': 'A2', 'High': 'B2', 'Medium': 'C3', 'Low': 'D4' },
-                7: { 'Critical': 'B1', 'High': 'C1', 'Medium': 'D2', 'Low': 'E3' },
-                8: { 'Critical': 'A+', 'High': 'A+', 'Medium': 'A1', 'Low': 'B2' }
+        // Get reliability index based on multiple factors (priority, performance impact, and equipment type)
+        function getReliabilityIndex(priority, itemId) {
+            const reliabilityIndexMap = {
+                1: { 'Critical': '92.1%', 'High': '94.7%', 'Medium': '96.3%', 'Low': '98.1%' },
+                2: { 'Critical': '89.4%', 'High': '93.2%', 'Medium': '95.8%', 'Low': '97.6%' },
+                3: { 'Critical': '87.9%', 'High': '91.6%', 'Medium': '94.2%', 'Low': '96.8%' },
+                4: { 'Critical': '93.7%', 'High': '95.9%', 'Medium': '97.4%', 'Low': '98.7%' },
+                5: { 'Critical': '90.3%', 'High': '92.8%', 'Medium': '95.1%', 'Low': '97.3%' },
+                6: { 'Critical': '88.6%', 'High': '91.4%', 'Medium': '94.7%', 'Low': '96.9%' },
+                7: { 'Critical': '91.8%', 'High': '94.1%', 'Medium': '96.2%', 'Low': '98.0%' },
+                8: { 'Critical': '86.2%', 'High': '89.7%', 'Medium': '93.1%', 'Low': '95.8%' }
             };
             
-            const itemRisks = riskScoreMap[itemId];
-            return itemRisks ? itemRisks[priority] || 'C1' : (priority === 'Critical' ? 'A1' : priority === 'High' ? 'B2' : priority === 'Medium' ? 'C3' : 'D4');
+            const itemReliability = reliabilityIndexMap[itemId];
+            return itemReliability ? itemReliability[priority] || '95.0%' : (priority === 'Critical' ? '90.0%' : priority === 'High' ? '93.0%' : priority === 'Medium' ? '96.0%' : '98.0%');
         }
 
         // Create performance decline chart showing AI-detected performance drop
@@ -1389,29 +1434,40 @@
         }
 
         function simulateHistoryChanges(history, summary) {
-            // Update the most recent data points to show live changes
+            // Get current pie chart values to maintain consistency - updated to ~160MW total
+            const currentSources = window.energySourcesData || {
+                solar: { current: 56.3 },
+                wind: { current: 45.9 },
+                oil_gas: { current: 32.8 },
+                hydrogen: { current: 25.0 }
+            };
+            
+            // Update the most recent data points to show live changes based on pie chart
             const recentPoints = Math.min(3, history.length);
             
             for (let i = history.length - recentPoints; i < history.length; i++) {
                 const point = history[i];
                 
-                // Simulate realistic power generation changes
-                const powerChange = (Math.random() - 0.5) * 20;
-                point.power_generated += powerChange;
-                point.power_generated = Math.max(600, Math.min(1200, point.power_generated));
-                point.power_generated = Math.round(point.power_generated * 10) / 10;
+                // Use small variations around ACTUAL current pie chart values
+                const solarVariation = (Math.random() - 0.5) * 2; // Smaller variations for stability
+                const windVariation = (Math.random() - 0.5) * 2;
+                const oilGasVariation = (Math.random() - 0.5) * 1.5;
+                const hydrogenVariation = (Math.random() - 0.5) * 1.5;
                 
-                // Simulate clean energy percentage changes
-                const cleanChange = (Math.random() - 0.5) * 5;
-                point.clean_energy += cleanChange;
-                point.clean_energy = Math.max(50, Math.min(95, point.clean_energy));
-                point.clean_energy = Math.round(point.clean_energy * 10) / 10;
+                // Set values based on EXACT pie chart values with tiny variations
+                point.solar_output = Math.max(currentSources.solar.current * 0.95, Math.min(currentSources.solar.current * 1.05, currentSources.solar.current + solarVariation));
+                point.wind_output = Math.max(currentSources.wind.current * 0.95, Math.min(currentSources.wind.current * 1.05, currentSources.wind.current + windVariation));
+                point.oil_gas_output = Math.max(currentSources.oil_gas.current * 0.95, Math.min(currentSources.oil_gas.current * 1.05, currentSources.oil_gas.current + oilGasVariation));
+                point.hydrogen_output = Math.max(currentSources.hydrogen.current * 0.95, Math.min(currentSources.hydrogen.current * 1.05, currentSources.hydrogen.current + hydrogenVariation));
                 
-                // Simulate net zero score changes
-                const netZeroChange = (Math.random() - 0.5) * 4;
-                point.net_zero_score += netZeroChange;
-                point.net_zero_score = Math.max(45, Math.min(90, point.net_zero_score));
-                point.net_zero_score = Math.round(point.net_zero_score * 10) / 10;
+                // Round values
+                point.solar_output = Math.round(point.solar_output * 10) / 10;
+                point.wind_output = Math.round(point.wind_output * 10) / 10;
+                point.oil_gas_output = Math.round(point.oil_gas_output * 10) / 10;
+                point.hydrogen_output = Math.round(point.hydrogen_output * 10) / 10;
+                
+                // Update total power based on sources
+                point.power_generated = point.solar_output + point.wind_output + point.oil_gas_output + point.hydrogen_output;
                 
                 // Maintenance events change occasionally
                 if (Math.random() < 0.1) {
@@ -1419,10 +1475,23 @@
                 }
             }
             
-            // Update summary with live averages
-            summary.avg_power = Math.round(history.reduce((sum, h) => sum + h.power_generated, 0) / history.length * 10) / 10;
-            summary.avg_clean = Math.round(history.reduce((sum, h) => sum + h.clean_energy, 0) / history.length * 10) / 10;
-            summary.avg_net_zero = Math.round(history.reduce((sum, h) => sum + h.net_zero_score, 0) / history.length * 10) / 10;
+            // Ensure the last point matches EXACTLY with current pie chart values
+            if (history.length > 0) {
+                const lastPoint = history[history.length - 1];
+                lastPoint.solar_output = currentSources.solar.current;
+                lastPoint.wind_output = currentSources.wind.current;
+                lastPoint.oil_gas_output = currentSources.oil_gas.current;
+                lastPoint.hydrogen_output = currentSources.hydrogen.current;
+                lastPoint.power_generated = currentSources.solar.current + currentSources.wind.current + currentSources.oil_gas.current + currentSources.hydrogen.current;
+            }
+            
+            // Update summary with EXACT current values
+            const totalPower = currentSources.solar.current + currentSources.wind.current + currentSources.oil_gas.current + currentSources.hydrogen.current;
+            summary.avg_power = Math.round(totalPower * 10) / 10;
+            summary.avg_solar = currentSources.solar.current;
+            summary.avg_wind = currentSources.wind.current;
+            summary.avg_oil_gas = currentSources.oil_gas.current;
+            summary.avg_hydrogen = currentSources.hydrogen.current;
             summary.total_maintenance_events = history.reduce((sum, h) => sum + h.maintenance_events, 0);
         }
 
@@ -1433,10 +1502,52 @@
             console.log('Usage History Data:', history);
             console.log('Clean Energy Values:', history.map(h => h.clean_energy));
             
-            // Prepare final data arrays
-            const powerData = history.map(h => h.power_generated);
-            const cleanData = history.map(h => h.clean_energy);
-            const netZeroData = history.map(h => h.net_zero_score);
+            // Prepare energy source data arrays for the 4 main sources - sync with pie chart
+            const currentSources = window.energySourcesData || {
+                solar: { current: 56.3 }, // Updated to match ~160MW total
+                wind: { current: 45.9 },
+                oil_gas: { current: 32.8 },
+                hydrogen: { current: 25.0 }
+            };
+            
+            // Debug log to verify synchronization
+            console.log('Line graph using pie chart values:', currentSources);
+            
+            // Generate historical data based on EXACT current pie chart values with realistic variations
+            const solarData = history.map((h, index) => {
+                const baseValue = currentSources.solar.current;
+                const variation = (Math.sin(index * 0.2) + Math.random() * 0.4 - 0.2) * 5;
+                const finalValue = Math.max(baseValue * 0.85, Math.min(baseValue * 1.15, baseValue + variation));
+                return Math.round(finalValue * 10) / 10;
+            });
+            const windData = history.map((h, index) => {
+                const baseValue = currentSources.wind.current;
+                const variation = (Math.cos(index * 0.15) + Math.random() * 0.4 - 0.2) * 4;
+                const finalValue = Math.max(baseValue * 0.85, Math.min(baseValue * 1.15, baseValue + variation));
+                return Math.round(finalValue * 10) / 10;
+            });
+            const oilGasData = history.map((h, index) => {
+                const baseValue = currentSources.oil_gas.current;
+                const variation = (Math.sin(index * 0.1) + Math.random() * 0.3 - 0.15) * 3;
+                const finalValue = Math.max(baseValue * 0.85, Math.min(baseValue * 1.15, baseValue + variation));
+                return Math.round(finalValue * 10) / 10;
+            });
+            const hydrogenData = history.map((h, index) => {
+                const baseValue = currentSources.hydrogen.current;
+                const variation = (Math.cos(index * 0.25) + Math.random() * 0.3 - 0.15) * 2;
+                const finalValue = Math.max(baseValue * 0.85, Math.min(baseValue * 1.15, baseValue + variation));
+                return Math.round(finalValue * 10) / 10;
+            });
+            
+            // Ensure the most recent data point matches current pie chart values exactly
+            if (solarData.length > 0) {
+                solarData[solarData.length - 1] = currentSources.solar.current;
+                windData[windData.length - 1] = currentSources.wind.current;
+                oilGasData[oilGasData.length - 1] = currentSources.oil_gas.current;
+                hydrogenData[hydrogenData.length - 1] = currentSources.hydrogen.current;
+            }
+            
+            console.log('Line graph final current values - Solar:', solarData[solarData.length-1], 'Wind:', windData[windData.length-1]);
             
             const layout = {
                 title: {
@@ -1449,16 +1560,9 @@
                     showticklabels: true
                 },
                 yaxis: { 
-                    title: { text: 'Power (MW)', font: { color: '#84BD00', size: 11 } },
+                    title: { text: 'Energy Output (MW)', font: { color: '#84BD00', size: 11 } },
                     tickfont: { color: '#84BD00', size: 10 },
                     side: 'left'
-                },
-                yaxis2: {
-                    title: { text: 'Percentage (%)', font: { color: '#00A3E0', size: 11 } },
-                    tickfont: { color: '#323232', size: 10 },
-                    overlaying: 'y',
-                    side: 'right',
-                    range: [0, 100]
                 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(248,249,250,0.5)',
@@ -1479,32 +1583,38 @@
                     {
                         x: [],
                         y: [],
-                        name: 'Power (MW)',
+                        name: 'Solar',
                         type: 'scatter',
                         mode: 'lines+markers',
-                        line: { color: '#84BD00', width: 2 },
-                        marker: { color: '#84BD00', size: 4 },
-                        yaxis: 'y1'
+                        line: { color: '#FFD700', width: 2 },
+                        marker: { color: '#FFD700', size: 4 }
                     },
                     {
                         x: [],
                         y: [],
-                        name: 'Clean %',
+                        name: 'Wind',
                         type: 'scatter',
                         mode: 'lines+markers',
-                        line: { color: '#00A3E0', width: 2 },
-                        marker: { color: '#00A3E0', size: 4 },
-                        yaxis: 'y2'
+                        line: { color: '#87CEEB', width: 2 },
+                        marker: { color: '#87CEEB', size: 4 }
                     },
                     {
                         x: [],
                         y: [],
-                        name: 'Net Zero %',
+                        name: 'Oil & Gas',
                         type: 'scatter',
                         mode: 'lines+markers',
-                        line: { color: '#00843D', width: 2 },
-                        marker: { color: '#00843D', size: 4 },
-                        yaxis: 'y2'
+                        line: { color: '#FF6B35', width: 2 },
+                        marker: { color: '#FF6B35', size: 4 }
+                    },
+                    {
+                        x: [],
+                        y: [],
+                        name: 'Hydrogen',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#32CD32', width: 2 },
+                        marker: { color: '#32CD32', size: 4 }
                     }
                 ];
 
@@ -1517,25 +1627,28 @@
                 
                 // Store data arrays that we'll build progressively
                 const progressiveData = [
-                    { x: [], y: [] }, // Power
-                    { x: [], y: [] }, // Clean
-                    { x: [], y: [] }  // Net Zero
+                    { x: [], y: [] }, // Solar
+                    { x: [], y: [] }, // Wind
+                    { x: [], y: [] }, // Oil & Gas
+                    { x: [], y: [] }  // Hydrogen
                 ];
                 
                 const addDataPoint = () => {
                     if (currentPoint < totalPoints) {
                         // Add current data point to progressive arrays
                         progressiveData[0].x.push(dates[currentPoint]);
-                        progressiveData[0].y.push(powerData[currentPoint]);
+                        progressiveData[0].y.push(solarData[currentPoint]);
                         progressiveData[1].x.push(dates[currentPoint]);
-                        progressiveData[1].y.push(cleanData[currentPoint]);
+                        progressiveData[1].y.push(windData[currentPoint]);
                         progressiveData[2].x.push(dates[currentPoint]);
-                        progressiveData[2].y.push(netZeroData[currentPoint]);
+                        progressiveData[2].y.push(oilGasData[currentPoint]);
+                        progressiveData[3].x.push(dates[currentPoint]);
+                        progressiveData[3].y.push(hydrogenData[currentPoint]);
                         
                         // Update chart with current progressive data
                         const update = {
-                            x: [progressiveData[0].x, progressiveData[1].x, progressiveData[2].x],
-                            y: [progressiveData[0].y, progressiveData[1].y, progressiveData[2].y]
+                            x: [progressiveData[0].x, progressiveData[1].x, progressiveData[2].x, progressiveData[3].x],
+                            y: [progressiveData[0].y, progressiveData[1].y, progressiveData[2].y, progressiveData[3].y]
                         };
                         
                         Plotly.restyle('usage-history-chart', update);
@@ -1555,33 +1668,39 @@
                 const data = [
                     {
                         x: dates,
-                        y: powerData,
-                        name: 'Power (MW)',
+                        y: solarData,
+                        name: 'Solar',
                         type: 'scatter',
                         mode: 'lines+markers',
-                        line: { color: '#84BD00', width: 2 },
-                        marker: { color: '#84BD00', size: 4 },
-                        yaxis: 'y1'
+                        line: { color: '#FFD700', width: 2 },
+                        marker: { color: '#FFD700', size: 4 }
                     },
                     {
                         x: dates,
-                        y: cleanData,
-                        name: 'Clean %',
+                        y: windData,
+                        name: 'Wind',
                         type: 'scatter',
                         mode: 'lines+markers',
-                        line: { color: '#00A3E0', width: 2 },
-                        marker: { color: '#00A3E0', size: 4 },
-                        yaxis: 'y2'
+                        line: { color: '#87CEEB', width: 2 },
+                        marker: { color: '#87CEEB', size: 4 }
                     },
                     {
                         x: dates,
-                        y: netZeroData,
-                        name: 'Net Zero %',
+                        y: oilGasData,
+                        name: 'Oil & Gas',
                         type: 'scatter',
                         mode: 'lines+markers',
-                        line: { color: '#00843D', width: 2 },
-                        marker: { color: '#00843D', size: 4 },
-                        yaxis: 'y2'
+                        line: { color: '#FF6B35', width: 2 },
+                        marker: { color: '#FF6B35', size: 4 }
+                    },
+                    {
+                        x: dates,
+                        y: hydrogenData,
+                        name: 'Hydrogen',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#32CD32', width: 2 },
+                        marker: { color: '#32CD32', size: 4 }
                     }
                 ];
                 
@@ -1594,38 +1713,51 @@
             const container = document.getElementById('summary-stats');
             const liveIndicator = liveDataEnabled ? '<span class="text-success">● LIVE</span>' : '';
             
+            // Get current pie chart values to sync with live performance - use the SAME values as line graph
+            const currentSources = window.energySourcesData || {
+                solar: { current: 56.3 },
+                wind: { current: 45.9 },
+                oil_gas: { current: 32.8 },
+                hydrogen: { current: 25.0 }
+            };
+            
+            // Debug log to verify synchronization
+            console.log('Live Performance values:', currentSources);
+            
+            const totalPower = currentSources.solar.current + currentSources.wind.current + currentSources.oil_gas.current + currentSources.hydrogen.current;
+            
             container.innerHTML = `
                 <div class="row g-2 mb-2">
                     <div class="col-6">
                         <div class="text-center p-2 bg-light rounded">
-                            <div class="fw-bold text-success">${summary.avg_power}</div>
-                            <small class="text-muted">Avg MW</small>
+                            <div class="fw-bold text-warning">${Math.round(currentSources.solar.current * 10) / 10}MW</div>
+                            <small class="text-muted">Solar</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center p-2 bg-light rounded">
-                            <div class="fw-bold text-info">${summary.avg_clean}%</div>
-                            <small class="text-muted">Clean Energy</small>
+                            <div class="fw-bold text-info">${Math.round(currentSources.wind.current * 10) / 10}MW</div>
+                            <small class="text-muted">Wind</small>
                         </div>
                     </div>
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-6">
                         <div class="text-center p-2 bg-light rounded">
-                            <div class="fw-bold text-primary">${summary.avg_net_zero}%</div>
-                            <small class="text-muted">Net Zero</small>
+                            <div class="fw-bold text-danger">${Math.round(currentSources.oil_gas.current * 10) / 10}MW</div>
+                            <small class="text-muted">Oil & Gas</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center p-2 bg-light rounded">
-                            <div class="fw-bold text-warning">${summary.total_maintenance_events}</div>
-                            <small class="text-muted">Maintenance</small>
+                            <div class="fw-bold text-success">${Math.round(currentSources.hydrogen.current * 10) / 10}MW</div>
+                            <small class="text-muted">Hydrogen</small>
                         </div>
                     </div>
                 </div>
                 <div class="alert alert-info py-2 px-2 small mb-0">
                     <i class="fas fa-chart-line"></i> ${liveIndicator}
-                    ${summary.avg_clean > 70 ? 'Excellent' : 'Good'} performance. 
+                    Total: ${Math.round(totalPower * 10) / 10}MW. 
                     ${summary.total_maintenance_events > 5 ? 'Monitor maintenance.' : 'Optimal frequency.'}
                 </div>
             `;
@@ -1717,20 +1849,20 @@
         let energyTrend = 0.05; // Reduced trend for smoother changes
         let lastUpdateTime = Date.now();
         let simulatedData = {
-            solar: { base: 35.2, trend: 0.02, efficiency: 85.1 }, // Reduced trends
-            wind: { base: 28.7, trend: -0.015, efficiency: 78.3 },
-            hydrogen: { base: 15.6, trend: 0.01, efficiency: 92.1 },
-            oil_gas: { base: 20.5, trend: -0.005, efficiency: 67.8 }
+            solar: { base: 56.3, trend: 0.02, efficiency: 85.1 }, // Increased from 35.2 to 56.3
+            wind: { base: 45.9, trend: -0.015, efficiency: 78.3 }, // Increased from 28.7 to 45.9
+            hydrogen: { base: 25.0, trend: 0.01, efficiency: 92.1 }, // Increased from 15.6 to 25.0
+            oil_gas: { base: 32.8, trend: -0.005, efficiency: 67.8 } // Increased from 20.5 to 32.8
         };
         
-        // Previous values for stabilization
+        // Previous values for stabilization - updated to ~160MW total
         let previousValues = {
             total_power: 87.5,
             energy_sources: {
-                solar: { current: 35.2, efficiency: 85.1 },
-                wind: { current: 28.7, efficiency: 78.3 },
-                hydrogen: { current: 15.6, efficiency: 92.1 },
-                oil_gas: { current: 20.5, efficiency: 67.8 }
+                solar: { current: 56.3, efficiency: 85.1 }, // ~35% of 160MW
+                wind: { current: 45.9, efficiency: 78.3 }, // ~29% of 160MW
+                hydrogen: { current: 25.0, efficiency: 92.1 }, // ~16% of 160MW
+                oil_gas: { current: 32.8, efficiency: 67.8 } // ~20% of 160MW
             }
         };
 
@@ -1757,25 +1889,27 @@
                 energyTrend *= -1;
             }
 
-            // Simulate energy sources with stable patterns
+            // Simulate energy sources with stable patterns - updated for 160MW scale
             Object.keys(simulatedData).forEach(source => {
                 const data = simulatedData[source];
                 data.base += data.trend * timeDelta;
                 
-                // Keep values within realistic bounds
-                if (data.base > 45) {
-                    data.base = 45;
-                    data.trend = -Math.abs(data.trend);
-                } else if (data.base < 10) {
-                    data.base = 10;
-                    data.trend = Math.abs(data.trend);
+                // Keep values within realistic bounds for 160MW total
+                if (source === 'solar') {
+                    data.base = Math.max(45, Math.min(70, data.base)); // Solar: 45-70MW
+                } else if (source === 'wind') {
+                    data.base = Math.max(35, Math.min(60, data.base)); // Wind: 35-60MW
+                } else if (source === 'oil_gas') {
+                    data.base = Math.max(25, Math.min(45, data.base)); // Oil&Gas: 25-45MW
+                } else if (source === 'hydrogen') {
+                    data.base = Math.max(18, Math.min(35, data.base)); // Hydrogen: 18-35MW
                 }
                 
                 // Efficiency stays stable
                 data.efficiency = Math.max(60, Math.min(95, data.efficiency));
             });
 
-            // Calculate new values
+            // Calculate new values - scaled to ~160MW total
             const newTotalPower = Math.round(baseEnergyLevel * 10) / 10;
             const newSources = {
                 solar: { 
@@ -1846,9 +1980,9 @@
                     // Store pie chart data for delayed loading
                     window.energySourcesData = data.energy_sources;
                     
-                    // If pie chart is already initialized, update it
+                    // If pie chart is already initialized, update it immediately
                     if (energySourcesInitialized) {
-                        createEnergySourcesChart(data.energy_sources);
+                        updateEnergySourcesChart(data.energy_sources);
                     }
                     
                     // Add visual indicator for live data
